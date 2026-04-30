@@ -499,7 +499,10 @@ a{color:var(--teal);}
         <div class="chat-wrap">
           <div class="chat-top">
             <div class="chat-scene-lbl" id="chat-badge">💬 英会話</div>
-            <button class="back-btn" onclick="backToScen()">← シナリオを変更</button>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="model-badge" style="font-size:10px;color:var(--t3);font-weight:600;"></span>
+              <button class="back-btn" onclick="backToScen()">← シナリオを変更</button>
+            </div>
           </div>
           <div class="msgs" id="msgs"></div>
           <div class="chat-bottom">
@@ -563,7 +566,13 @@ a{color:var(--teal);}
 
 <script>
 // ════ Config ════
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+// モデル優先順位：安定稼働中のモデルを最優先
+const GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+];
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const STORAGE_KEY = 'eng_practice_v4';
 const API_KEY_STORE = 'eng_gemini_key';
 
@@ -781,24 +790,64 @@ function backToScen(){
   showDView('scen');
 }
 
-// ════ Gemini API ════
-async function callGemini(history){
-  const contents=history.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]}));
-  const res=await fetch(`${GEMINI_ENDPOINT}?key=${geminiKey}`,{
+// ════ Gemini API（リトライ＋フォールバック付き） ════
+
+// 1回のAPIリクエスト
+async function geminiRequest(modelName, body){
+  const url=`${GEMINI_BASE}${modelName}:generateContent?key=${geminiKey}`;
+  const res=await fetch(url,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      systemInstruction:{parts:[{text:dScen.sys}]},
-      contents,
-      generationConfig:{maxOutputTokens:320,temperature:0.88}
-    })
+    body:JSON.stringify(body)
   });
   if(!res.ok){
-    const e=await res.json();
-    throw new Error(e.error?.message||`HTTP ${res.status}`);
+    const e=await res.json().catch(()=>({}));
+    const err=new Error(e.error?.message||`HTTP ${res.status}`);
+    err.status=res.status;
+    throw err;
   }
   const d=await res.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not respond right now.';
+  const text=d.candidates?.[0]?.content?.parts?.[0]?.text||null;
+  if(text){
+    // 使用モデルをヘッダーに表示
+    const badge=document.getElementById('model-badge');
+    if(badge) badge.textContent='🤖 '+modelName;
+  }
+  return text;
+}
+
+// リトライ＋モデルフォールバック
+async function geminiWithRetry(body, maxRetry=3){
+  for(const model of GEMINI_MODELS){
+    for(let attempt=0; attempt<=maxRetry; attempt++){
+      try{
+        const text=await geminiRequest(model, body);
+        if(text) return text;
+      } catch(e){
+        const st=e.status||0;
+        // 認証エラーはすぐ投げる
+        if(st===400||st===401||st===403) throw e;
+        // 503/500/429はリトライまたは次モデルへ
+        if(attempt<maxRetry && (st===503||st===500||st===429)){
+          // 指数バックオフ：1秒 → 2秒 → 4秒
+          await new Promise(r=>setTimeout(r, 1000*Math.pow(2,attempt)));
+          continue;
+        }
+        // リトライ上限 → 次のモデルへ
+        break;
+      }
+    }
+  }
+  throw new Error('すべてのモデルで応答できませんでした。しばらくしてから再試行してください。');
+}
+
+async function callGemini(history){
+  const contents=history.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]}));
+  return await geminiWithRetry({
+    systemInstruction:{parts:[{text:dScen.sys}]},
+    contents,
+    generationConfig:{maxOutputTokens:320,temperature:0.88}
+  });
 }
 
 async function geminiTranslate(text,toLang){
@@ -806,14 +855,15 @@ async function geminiTranslate(text,toLang){
   const prompt=toLang==='ja'
     ? `Translate the following English text to Japanese. Reply with ONLY the Japanese translation, no explanation:\n${text}`
     : `Translate the following Japanese text to English. Reply with ONLY the English translation, no explanation:\n${text}`;
-  const res=await fetch(`${GEMINI_ENDPOINT}?key=${geminiKey}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:200}})
-  });
-  if(!res.ok) return toLang==='ja'?'翻訳エラー':'Translation error';
-  const d=await res.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || '—';
+  try{
+    const result=await geminiWithRetry({
+      contents:[{role:'user',parts:[{text:prompt}]}],
+      generationConfig:{maxOutputTokens:800, temperature:0.1}
+    });
+    return result||'—';
+  } catch(e){
+    return toLang==='ja'?'翻訳エラー（しばらくしてから再試行）':'Translation error (please retry)';
+  }
 }
 
 // ════ Chat Bubbles ════
@@ -928,11 +978,13 @@ async function sendMsg(){
   } catch(e){
     rmTyping();
     const msg=e.message||'';
-    if(msg.includes('API_KEY_INVALID')||msg.includes('400')||msg.includes('403')){
+    if(msg.includes('API_KEY_INVALID')||e.status===400||e.status===401||e.status===403){
       document.getElementById('key-err').textContent='APIキーが無効です。再度確認してください。';
       document.getElementById('key-err').style.display='block';
       geminiKey=''; localStorage.removeItem(API_KEY_STORE);
       showDView('key');
+    } else if(msg.includes('しばらく')||e.status===503||e.status===500){
+      addAIBubble('⚠️ サーバーが混雑しています。少し待ってから、もう一度話しかけてみてください！');
     } else {
       addAIBubble('Sorry, there was a connection error. Please try again!');
     }
@@ -945,16 +997,53 @@ function chatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendM
 function chatResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 function useHint(h){ document.getElementById('cinput').value=h; document.getElementById('cinput').focus(); }
 
-// Chat Mic (English)
+// Chat Mic (English) — continuous mode で長時間録音対応
 function toggleCMic(){
-  if(cMicOn){ cMicRec&&cMicRec.stop(); return; }
+  if(cMicOn){
+    cMicOn=false;
+    try{ cMicRec&&cMicRec.stop(); }catch(e){}
+    document.getElementById('cmic').classList.remove('rec');
+    document.getElementById('cmic').textContent='🎤';
+    document.getElementById('cinput').placeholder='英語でメッセージを入力... (Enter で送信)';
+    return;
+  }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ alert('音声認識はChrome推奨です'); return; }
-  const r=new SR(); r.lang='en-US'; r.continuous=false; r.interimResults=false;
-  r.onstart=()=>{ cMicOn=true; document.getElementById('cmic').classList.add('rec'); document.getElementById('cmic').textContent='⏹️'; };
-  r.onresult=(e)=>{ document.getElementById('cinput').value=e.results[0][0].transcript; chatResize(document.getElementById('cinput')); };
-  r.onend=()=>{ cMicOn=false; document.getElementById('cmic').classList.remove('rec'); document.getElementById('cmic').textContent='🎤'; };
-  r.onerror=()=>{ cMicOn=false; document.getElementById('cmic').classList.remove('rec'); document.getElementById('cmic').textContent='🎤'; };
+  const r=new SR();
+  r.lang='en-US';
+  r.continuous=true;
+  r.interimResults=true;
+  r.maxAlternatives=1;
+  let finalTranscript='';
+  r.onstart=()=>{
+    cMicOn=true; finalTranscript='';
+    document.getElementById('cmic').classList.add('rec');
+    document.getElementById('cmic').textContent='⏹️';
+    document.getElementById('cinput').value='';
+    document.getElementById('cinput').placeholder='🎤 話しています... (⏹️で停止)';
+  };
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalTranscript+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('cinput').value=(finalTranscript+interim).trim();
+    chatResize(document.getElementById('cinput'));
+  };
+  r.onend=()=>{
+    if(cMicOn){ try{ r.start(); }catch(e){} return; }
+    document.getElementById('cmic').classList.remove('rec');
+    document.getElementById('cmic').textContent='🎤';
+    document.getElementById('cinput').placeholder='英語でメッセージを入力... (Enter で送信)';
+  };
+  r.onerror=(ev)=>{
+    if(ev.error==='no-speech') return;
+    cMicOn=false;
+    document.getElementById('cmic').classList.remove('rec');
+    document.getElementById('cmic').textContent='🎤';
+    document.getElementById('cinput').placeholder='英語でメッセージを入力... (Enter で送信)';
+  };
   cMicRec=r; r.start();
 }
 
@@ -972,14 +1061,47 @@ function speak(text){
 
 // ════ Right Panel: JP→EN Translation ════
 function toggleJpMic(){
-  if(jpMicOn){ jpMicRec&&jpMicRec.stop(); return; }
+  if(jpMicOn){
+    jpMicOn=false;
+    try{ jpMicRec&&jpMicRec.stop(); }catch(e){}
+    document.getElementById('jp-mic-btn').classList.remove('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+    return;
+  }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ alert('音声認識はChrome推奨です'); return; }
-  const r=new SR(); r.lang='ja-JP'; r.continuous=false; r.interimResults=false;
-  r.onstart=()=>{ jpMicOn=true; document.getElementById('jp-mic-btn').classList.add('active'); document.getElementById('jp-mic-btn').textContent='⏹️ 停止'; };
-  r.onresult=(e)=>{ document.getElementById('jp-ta').value=e.results[0][0].transcript; };
-  r.onend=()=>{ jpMicOn=false; document.getElementById('jp-mic-btn').classList.remove('active'); document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）'; };
-  r.onerror=()=>{ jpMicOn=false; document.getElementById('jp-mic-btn').classList.remove('active'); document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）'; };
+  const r=new SR();
+  r.lang='ja-JP';
+  r.continuous=true;
+  r.interimResults=true;
+  let finalJp='';
+  r.onstart=()=>{
+    jpMicOn=true; finalJp='';
+    document.getElementById('jp-mic-btn').classList.add('active');
+    document.getElementById('jp-mic-btn').textContent='⏹️ 停止';
+    document.getElementById('jp-ta').value='';
+    document.getElementById('jp-ta').placeholder='🎤 話しています...';
+  };
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalJp+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('jp-ta').value=(finalJp+interim).trim();
+  };
+  r.onend=()=>{
+    if(jpMicOn){ try{ r.start(); }catch(e){} return; }
+    document.getElementById('jp-mic-btn').classList.remove('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+    document.getElementById('jp-ta').placeholder='日本語を入力...\n例: コーヒーを一つください';
+  };
+  r.onerror=(ev)=>{
+    if(ev.error==='no-speech') return;
+    jpMicOn=false;
+    document.getElementById('jp-mic-btn').classList.remove('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+  };
   jpMicRec=r; r.start();
 }
 async function doTranslate(){
@@ -1078,20 +1200,51 @@ function toggleRec(){ pRec?stopRec():startRec(); }
 function startRec(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ alert('音声認識はChrome推奨です'); return; }
-  const r=new SR(); r.lang='en-US'; r.continuous=false; r.interimResults=false;
-  r.onstart=()=>{ pRec=true; document.getElementById('mic-ring').classList.add('rec'); document.getElementById('mic-ic').textContent='🔇'; document.getElementById('spk-lbl').textContent='録音中... タップして停止'; document.getElementById('mpr1').classList.remove('hidden'); document.getElementById('mpr2').classList.remove('hidden'); setWave(true); };
-  r.onresult=(e)=>{
-    const t=e.results[0][0].transcript;
-    document.getElementById('usr-txt').textContent=`認識: "${t}"`;
-    document.getElementById('usr-txt').classList.remove('hidden');
-    const{score,wordResults}=calcSc(pSents[pIdx],t);
-    pCur={sentence:pSents[pIdx],userText:t,score,wordResults};
-    pRes.push(pCur);
-    document.getElementById('s-score').textContent=Math.round(pRes.reduce((a,b)=>a+b.score,0)/pRes.length)+'点';
-    setPStep('review');
+  const r=new SR();
+  r.lang='en-US';
+  r.continuous=true;
+  r.interimResults=true;
+  r.maxAlternatives=1;
+  let finalPrac='';
+  r.onstart=()=>{
+    pRec=true; finalPrac='';
+    document.getElementById('mic-ring').classList.add('rec');
+    document.getElementById('mic-ic').textContent='🔇';
+    document.getElementById('spk-lbl').textContent='録音中... タップして停止';
+    document.getElementById('mpr1').classList.remove('hidden');
+    document.getElementById('mpr2').classList.remove('hidden');
+    setWave(true);
   };
-  r.onerror=()=>{ pRec=false; setRecUI(false); };
-  r.onend=()=>{ pRec=false; setRecUI(false); };
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalPrac+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    const preview=(finalPrac+interim).trim();
+    if(preview){
+      document.getElementById('usr-txt').textContent=`認識中: "${preview}"`;
+      document.getElementById('usr-txt').classList.remove('hidden');
+    }
+  };
+  r.onerror=(ev)=>{
+    if(ev.error==='no-speech') return;
+    pRec=false; setRecUI(false);
+  };
+  r.onend=()=>{
+    if(pRec){ try{ r.start(); }catch(e){} return; }
+    const t=finalPrac.trim();
+    if(t){
+      document.getElementById('usr-txt').textContent=`認識: "${t}"`;
+      document.getElementById('usr-txt').classList.remove('hidden');
+      const{score,wordResults}=calcSc(pSents[pIdx],t);
+      pCur={sentence:pSents[pIdx],userText:t,score,wordResults};
+      pRes.push(pCur);
+      document.getElementById('s-score').textContent=Math.round(pRes.reduce((a,b)=>a+b.score,0)/pRes.length)+'点';
+      setPStep('review');
+    }
+    setRecUI(false);
+  };
   pRecRef=r; r.start();
 }
 function stopRec(){ pRecRef&&pRecRef.stop(); pRec=false; setRecUI(false); }
