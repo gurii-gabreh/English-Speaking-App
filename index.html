@@ -457,6 +457,7 @@ const STORAGE_KEY='eng_v5';
 const API_KEY_STORE='eng_groq_key';
 
 let groqKey=localStorage.getItem(API_KEY_STORE)||'';
+const msgStore=new Map(); // id→text の安全なストレージ
 let ttsSpeed=0.75,isAuto=false,aiMode='off',curTab='prac'; // aiMode: 'off'|'pron'|'nuance'
 let pSents=[],pIdx=0,pStep='listen',pRes=[],pCur=null;
 let pPlaying=false,pRec=false,pRecRef=null,pTimer=null,pSaved=false,pFinal='';
@@ -617,27 +618,29 @@ function changeKey(){groqKey='';localStorage.removeItem(API_KEY_STORE);document.
 // Scenarios
 function initScens(){document.getElementById('scen-grid').innerHTML=SCENS.map(s=>`<div class="scen-card" id="sc-${s.id}" onclick="selScen('${s.id}')"><div class="scen-ic">${s.ic}</div><div class="scen-nm">${s.nm}</div><div class="scen-lv">${s.lv}</div></div>`).join('');}
 function selScen(id){dScen=SCENS.find(s=>s.id===id);document.querySelectorAll('.scen-card').forEach(c=>c.classList.remove('on'));document.getElementById('sc-'+id).classList.add('on');document.getElementById('d-start-btn').disabled=false;}
-function startChat(){if(!dScen)return;dMsgs=[];msgId=0;cSpeech='';document.getElementById('msgs').innerHTML='';document.getElementById('chat-badge').textContent=dScen.ic+' '+dScen.nm;document.getElementById('hint-row').innerHTML=dScen.hints.map(h=>`<span class="hint" onclick="useHint('${escA(h)}')">${esc(h)}</span>`).join('');resetVoiceDisp();showDV('chat');addAIBubble(dScen.open);}
+function startChat(){if(!dScen)return;dMsgs=[];msgId=0;cSpeech='';msgStore.clear();document.getElementById('msgs').innerHTML='';document.getElementById('chat-badge').textContent=dScen.ic+' '+dScen.nm;document.getElementById('hint-row').innerHTML=dScen.hints.map(h=>`<span class="hint" onclick="useHint('${escA(h)}')">${esc(h)}</span>`).join('');resetVoiceDisp();showDV('chat');addAIBubble(dScen.open);}
 function backToScen(){window.speechSynthesis&&window.speechSynthesis.cancel();stopCMic();showDV('scen');}
 
 // Chat bubbles
 function addAIBubble(text){
-  const id='m'+msgId++;dMsgs.push({role:'assistant',content:text});
+  const id='m'+msgId++;
+  dMsgs.push({role:'assistant',content:text});
+  msgStore.set(id, text); // テキストをMapに安全保存
   const el=document.createElement('div');el.className='msg-ai';el.id=id;
   const now=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-  const encText=encodeURIComponent(text);
-  el.innerHTML=`<div class="av av-ai">${esc(dScen.ic)}</div><div class="bubble b-ai"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-id="${id}" data-enc="${encText}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-text="${encText}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div class="bmeta">AI · ${now}</div></div>`;
+  el.innerHTML=`<div class="av av-ai">${esc(dScen.ic)}</div><div class="bubble b-ai"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-msgid="${id}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-msgid="${id}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div class="bmeta">AI · ${now}</div></div>`;
   document.getElementById('msgs').appendChild(el);scrollMsgs();
   speakThenMic(text);
 }
 
 function addUserBubble(text){
-  const id='m'+msgId++;dMsgs.push({role:'user',content:text});
+  const id='m'+msgId++;
+  dMsgs.push({role:'user',content:text});
+  msgStore.set(id, text); // テキストをMapに安全保存
   statMsgs++;document.getElementById('s-msgs').textContent=statMsgs;
   const now=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   const el=document.createElement('div');el.className='msg-user';el.id=id;
-  const encText=encodeURIComponent(text);
-  el.innerHTML=`<div class="av av-user">👤</div><div class="bubble b-user"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-id="${id}" data-enc="${encText}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-text="${encText}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div id="${id}-corr" class="bextra corr hidden"></div><div class="bmeta">あなた · ${now}</div></div>`;
+  el.innerHTML=`<div class="av av-user">👤</div><div class="bubble b-user"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-msgid="${id}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-msgid="${id}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div id="${id}-corr" class="bextra corr hidden"></div><div class="bmeta">あなた · ${now}</div></div>`;
   document.getElementById('msgs').appendChild(el);scrollMsgs();return id;
 }
 
@@ -646,32 +649,30 @@ function addCorrBtn(bid,corr){const bub=document.getElementById(bid);if(!bub)ret
 function addTyping(){const el=document.createElement('div');el.className='msg-ai';el.id='typing';el.innerHTML=`<div class="av av-ai">${dScen?dScen.ic:'🤖'}</div><div class="bubble b-ai"><div class="btext"><div class="typing"><span></span><span></span><span></span></div></div></div>`;document.getElementById('msgs').appendChild(el);scrollMsgs();}
 function rmTyping(){const e=document.getElementById('typing');if(e)e.remove();}
 function scrollMsgs(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
-function toggleJpB(id,enc){
+function toggleJpB(id, text){
   const el=document.getElementById(id+'-jp');
-  if(!el)return;
+  if(!el) return;
   if(el.classList.contains('hidden')){
     el.textContent='翻訳中...';
     el.classList.remove('hidden');
-    groqTranslate(decodeURIComponent(enc),'ja').then(r=>{el.textContent='🇯🇵 '+r;});
+    groqTranslate(text,'ja').then(r=>{ el.textContent='🇯🇵 '+r; });
   } else {
     el.classList.toggle('hidden');
   }
 }
 
-// イベントデリゲーション: チャットエリア全体でボタンクリックを処理
+// イベントデリゲーション: msgStore からテキストを安全に取得
 document.addEventListener('click', function(e){
-  // 日本語訳ボタン
-  if(e.target.classList.contains('jp-btn')){
-    const id=e.target.dataset.id;
-    const enc=e.target.dataset.enc;
-    if(id&&enc) toggleJpB(id,enc);
+  const btn=e.target.closest('.jp-btn,.spk-btn');
+  if(!btn) return;
+  const msgid=btn.dataset.msgid;
+  const text=msgStore.get(msgid);
+  if(!text) return;
+  if(btn.classList.contains('jp-btn')){
+    toggleJpB(msgid, text);
+  } else if(btn.classList.contains('spk-btn')){
+    speak(text);
   }
-  // 聴くボタン
-  if(e.target.classList.contains('spk-btn')){
-    const enc=e.target.dataset.text;
-    if(enc) speak(decodeURIComponent(enc));
-  }
-  // 正しい英文ボタン (corr-btn はaddCorrBtnで直接onclick設定済み)
 });
 
 // Send
