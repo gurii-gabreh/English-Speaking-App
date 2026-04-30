@@ -365,7 +365,7 @@ a{color:var(--teal);}
       <div class="key-title">Groq APIキーを入力</div>
       <div class="groq-badge">✅ 無料・クレカ不要・超高速・安定</div>
       <div class="key-desc">
-        Geminiより<strong>10倍安定</strong>していて<strong>超高速</strong>です。<br>
+        Groqは<strong>安定・高速・無料</strong>で英会話練習に最適です。<br>
         Llama 3.3 70B使用（1日<strong>14,400回</strong>まで無料）<br><br>
         ① <a href="https://console.groq.com" target="_blank">console.groq.com</a> でアカウント作成（Googleログイン可）<br>
         ② 「API Keys」→「Create API Key」をクリック<br>
@@ -625,9 +625,9 @@ function addAIBubble(text){
   const id='m'+msgId++;dMsgs.push({role:'assistant',content:text});
   const el=document.createElement('div');el.className='msg-ai';el.id=id;
   const now=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-  el.innerHTML=`<div class="av av-ai">${dScen.ic}</div><div class="bubble b-ai"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab" onclick="toggleJpB('${id}','${encodeURIComponent(text)}')">🇯🇵 日本語訳</button><button class="bab" onclick="speak('${escA(text)}')">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div class="bmeta">AI · ${now}</div></div>`;
+  const encText=encodeURIComponent(text);
+  el.innerHTML=`<div class="av av-ai">${esc(dScen.ic)}</div><div class="bubble b-ai"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-id="${id}" data-enc="${encText}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-text="${encText}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div class="bmeta">AI · ${now}</div></div>`;
   document.getElementById('msgs').appendChild(el);scrollMsgs();
-  // TTS再生→完了後に自動マイク起動
   speakThenMic(text);
 }
 
@@ -636,7 +636,8 @@ function addUserBubble(text){
   statMsgs++;document.getElementById('s-msgs').textContent=statMsgs;
   const now=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   const el=document.createElement('div');el.className='msg-user';el.id=id;
-  el.innerHTML=`<div class="av av-user">👤</div><div class="bubble b-user"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab" onclick="toggleJpB('${id}','${encodeURIComponent(text)}')">🇯🇵 日本語訳</button><button class="bab" onclick="speak('${escA(text)}')">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div id="${id}-corr" class="bextra corr hidden"></div><div class="bmeta">あなた · ${now}</div></div>`;
+  const encText=encodeURIComponent(text);
+  el.innerHTML=`<div class="av av-user">👤</div><div class="bubble b-user"><div class="btext">${esc(text)}</div><div class="bactions"><button class="bab jp-btn" data-id="${id}" data-enc="${encText}">🇯🇵 日本語訳</button><button class="bab spk-btn" data-text="${encText}">🔊 聴く</button></div><div id="${id}-jp" class="bextra jp hidden"></div><div id="${id}-corr" class="bextra corr hidden"></div><div class="bmeta">あなた · ${now}</div></div>`;
   document.getElementById('msgs').appendChild(el);scrollMsgs();return id;
 }
 
@@ -645,7 +646,33 @@ function addCorrBtn(bid,corr){const bub=document.getElementById(bid);if(!bub)ret
 function addTyping(){const el=document.createElement('div');el.className='msg-ai';el.id='typing';el.innerHTML=`<div class="av av-ai">${dScen?dScen.ic:'🤖'}</div><div class="bubble b-ai"><div class="btext"><div class="typing"><span></span><span></span><span></span></div></div></div>`;document.getElementById('msgs').appendChild(el);scrollMsgs();}
 function rmTyping(){const e=document.getElementById('typing');if(e)e.remove();}
 function scrollMsgs(){const m=document.getElementById('msgs');m.scrollTop=m.scrollHeight;}
-function toggleJpB(id,enc){const el=document.getElementById(id+'-jp');if(el.classList.contains('hidden')){el.textContent='翻訳中...';el.classList.remove('hidden');groqTranslate(decodeURIComponent(enc),'ja').then(r=>{el.textContent='🇯🇵 '+r;});}else el.classList.toggle('hidden');}
+function toggleJpB(id,enc){
+  const el=document.getElementById(id+'-jp');
+  if(!el)return;
+  if(el.classList.contains('hidden')){
+    el.textContent='翻訳中...';
+    el.classList.remove('hidden');
+    groqTranslate(decodeURIComponent(enc),'ja').then(r=>{el.textContent='🇯🇵 '+r;});
+  } else {
+    el.classList.toggle('hidden');
+  }
+}
+
+// イベントデリゲーション: チャットエリア全体でボタンクリックを処理
+document.addEventListener('click', function(e){
+  // 日本語訳ボタン
+  if(e.target.classList.contains('jp-btn')){
+    const id=e.target.dataset.id;
+    const enc=e.target.dataset.enc;
+    if(id&&enc) toggleJpB(id,enc);
+  }
+  // 聴くボタン
+  if(e.target.classList.contains('spk-btn')){
+    const enc=e.target.dataset.text;
+    if(enc) speak(decodeURIComponent(enc));
+  }
+  // 正しい英文ボタン (corr-btn はaddCorrBtnで直接onclick設定済み)
+});
 
 // Send
 async function sendSpeech(){
@@ -702,7 +729,7 @@ function updateVoiceDisp(text,state){
 }
 
 // Chat Mic — continuous, readonly
-function toggleCMic(){cMicOn?stopCMic():startCMic();}
+function toggleCMic(){cMicOn?stopCMic(true):startCMic();}
 
 function startCMic(){
   if(cMicOn||dLoading)return;
@@ -716,9 +743,33 @@ function startCMic(){
   cMicRec=r;r.start();
 }
 
-function stopCMic(){if(!cMicOn)return;cMicOn=false;try{cMicRec&&cMicRec.stop();}catch(e){}document.getElementById('cmic').classList.remove('rec');document.getElementById('cmic').textContent='🎤';document.getElementById('auto-mic-bar').classList.add('hidden');if(cSpeech.trim()){updateVoiceDisp(cSpeech,'ready');document.getElementById('csend').disabled=false;}}
+function stopCMic(autoSend=false){
+  if(!cMicOn)return;
+  cMicOn=false;
+  try{cMicRec&&cMicRec.stop();}catch(e){}
+  document.getElementById('cmic').classList.remove('rec');
+  document.getElementById('cmic').textContent='🎤';
+  document.getElementById('auto-mic-bar').classList.add('hidden');
+  const speech=cSpeech.trim();
+  if(speech){
+    updateVoiceDisp(speech,'ready');
+    document.getElementById('csend').disabled=false;
+    // 録音停止ボタンを押したら自動送信
+    if(autoSend) setTimeout(()=>sendSpeech(),300);
+  }
+}
 
-function useHint(h){cSpeech=h;stopCMic();updateVoiceDisp(h,'ready');document.getElementById('csend').disabled=false;}
+function useHint(h){
+  cSpeech=h;
+  if(cMicOn){cMicOn=false;try{cMicRec&&cMicRec.stop();}catch(e){}}
+  document.getElementById('cmic').classList.remove('rec');
+  document.getElementById('cmic').textContent='🎤';
+  document.getElementById('auto-mic-bar').classList.add('hidden');
+  updateVoiceDisp(h,'ready');
+  document.getElementById('csend').disabled=false;
+  // ヒント選択後も自動送信
+  setTimeout(()=>sendSpeech(),400);
+}
 
 // JP Mic
 function toggleJpMic(){
