@@ -221,6 +221,45 @@ a{color:var(--teal);}
 @keyframes dB{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
 @keyframes bIn{0%{transform:scale(.8);opacity:0;}60%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
 .anim-in{animation:bIn .4s ease;}
+
+/* タイマー・終了ボタン */
+.session-bar{display:none;width:100%;background:var(--card);border-bottom:2px solid var(--border);padding:6px 20px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:54px;z-index:90;}
+.session-bar.active{display:flex;}
+.timer-wrap{display:flex;align-items:center;gap:8px;}
+.timer-icon{font-size:16px;}
+.timer-display{font-size:20px;font-weight:800;font-family:'Nunito',sans-serif;color:var(--teal);letter-spacing:1px;min-width:52px;}
+.timer-display.warn{color:var(--orange);animation:timerPulse 1s infinite;}
+.timer-display.danger{color:var(--red);animation:timerPulse .5s infinite;}
+.timer-mode-lbl{font-size:11px;color:var(--t2);font-weight:700;}
+.timer-bar-wrap{flex:1;max-width:280px;height:6px;background:rgba(226,217,204,0.8);border-radius:3px;overflow:hidden;}
+.timer-bar-fill{height:100%;border-radius:3px;background:var(--teal);transition:width .5s linear;}
+.timer-bar-fill.warn{background:var(--orange);}
+.timer-bar-fill.danger{background:var(--red);}
+.end-btn{padding:6px 16px;border-radius:8px;background:var(--red);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:5px;}
+.end-btn:hover{opacity:.85;}
+.time-sel{display:flex;gap:6px;margin-bottom:18px;justify-content:center;}
+.time-btn{padding:8px 20px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s;color:var(--t2);}
+.time-btn:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l);}
+.time-btn.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.summary-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;}
+.summary-overlay.active{display:flex;}
+.summary-card{background:var(--card);border-radius:20px;padding:28px 24px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.summary-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;}
+.summary-sub{font-size:13px;color:var(--t2);text-align:center;margin-bottom:20px;}
+.summary-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
+.summary-stat{background:var(--card2);border-radius:10px;padding:12px;text-align:center;}
+.summary-stat-num{font-size:24px;font-weight:800;color:var(--teal);}
+.summary-stat-lbl{font-size:10px;color:var(--t2);margin-top:2px;}
+.summary-log{max-height:180px;overflow-y:auto;margin-bottom:18px;}
+.summary-log-item{padding:8px 10px;border-radius:8px;background:var(--card2);margin-bottom:5px;font-size:12px;line-height:1.5;}
+.role-ai{color:var(--teal);font-weight:700;font-size:10px;}
+.role-user{color:var(--orange);font-weight:700;font-size:10px;}
+.summary-btns{display:flex;gap:8px;}
+.summary-btn{flex:1;height:42px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;}
+.summary-btn:hover{opacity:.88;}
+.summary-btn-teal{background:var(--teal);color:#fff;}
+.summary-btn-org{background:var(--orange);color:#fff;}
+@keyframes timerPulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 </style>
 </head>
 <body>
@@ -248,6 +287,38 @@ a{color:var(--teal);}
     </div>
   </div>
 </header>
+
+<!-- セッションタイマーバー（会話中のみ表示） -->
+<div class="session-bar" id="session-bar">
+  <div class="timer-wrap">
+    <span class="timer-icon">⏱</span>
+    <span class="timer-display" id="timer-display">3:00</span>
+    <div>
+      <div class="timer-mode-lbl" id="timer-mode-lbl">3分モード</div>
+      <div class="timer-bar-wrap"><div class="timer-bar-fill" id="timer-bar-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <button class="end-btn" onclick="forceEndSession()">⏹ 会話を終了</button>
+</div>
+
+<!-- 終了サマリーオーバーレイ -->
+<div class="summary-overlay" id="summary-overlay">
+  <div class="summary-card">
+    <div style="font-size:36px;text-align:center;margin-bottom:10px;" id="summary-icon">🏆</div>
+    <div class="summary-title" id="summary-title">会話完了！</div>
+    <div class="summary-sub" id="summary-sub"></div>
+    <div class="summary-stats">
+      <div class="summary-stat"><div class="summary-stat-num" id="sum-turns">0</div><div class="summary-stat-lbl">やりとり回数</div></div>
+      <div class="summary-stat"><div class="summary-stat-num" id="sum-words">0</div><div class="summary-stat-lbl">あなたの単語数</div></div>
+      <div class="summary-stat"><div class="summary-stat-num" id="sum-time">0:00</div><div class="summary-stat-lbl">会話時間</div></div>
+    </div>
+    <div class="summary-log" id="summary-log"></div>
+    <div class="summary-btns">
+      <button class="summary-btn summary-btn-org" onclick="closeSummaryAndRestart()">↺ もう一度</button>
+      <button class="summary-btn summary-btn-teal" onclick="closeSummaryToScen()">← シナリオ選択</button>
+    </div>
+  </div>
+</div>
 
 <div class="app-body">
 <div class="main-col">
@@ -385,6 +456,14 @@ a{color:var(--teal);}
       <p class="hero-p">AIが<strong>英語のみ</strong>で返答。AI返答後に自動でマイクが起動します！</p>
     </div>
     <div class="scen-grid" id="scen-grid"></div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);text-align:center;margin-bottom:8px;">⏱ 練習時間を選択</div>
+      <div class="time-sel">
+        <button class="time-btn on" id="time-3" onclick="selTime(3)">3分</button>
+        <button class="time-btn" id="time-5" onclick="selTime(5)">5分</button>
+        <button class="time-btn" id="time-free" onclick="selTime(0)">自由</button>
+      </div>
+    </div>
     <button class="start-btn" id="d-start-btn" onclick="startChat()" disabled>💬 会話を開始する →</button>
     <p style="text-align:right;margin-top:9px;">
       <button onclick="changeKey()" style="font-size:11px;color:var(--t3);background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;">🔑 APIキーを変更</button>
@@ -462,6 +541,8 @@ let ttsSpeed=0.75,isAuto=false,aiMode='off',curTab='prac'; // aiMode: 'off'|'pro
 let pSents=[],pIdx=0,pStep='listen',pRes=[],pCur=null;
 let pPlaying=false,pRec=false,pRecRef=null,pTimer=null,pSaved=false,pFinal='';
 let dScen=null,dMsgs=[],dLoading=false;
+let sessionMinutes=3; // 選択中の時間 (0=自由)
+let timerSec=0,timerTotal=0,timerInterval=null,sessionStartTime=null;
 let cMicRec=null,cMicOn=false,cSpeech='';
 let jpMicRec=null,jpMicOn=false;
 let msgId=0,statMsgs=0,histExp=null;
@@ -470,35 +551,35 @@ const EXAMPLE=`The weather is beautiful today.\nI would like to order a coffee, 
 
 const SCENS=[
   {id:'cafe',ic:'☕',nm:'カフェ注文',lv:'初級',
-   sys:`You are a friendly barista at an English café. User is a Japanese English learner. Respond ONLY in English, warmly, 2-3 sentences. After your reply on a new line write: CORRECTION: [corrected user sentence if grammar/vocab errors, else write CORRECTION:OK]`,
+   sys:`You are Alex, a friendly barista at Sunrise Café. Chat naturally like a real person — ask follow-up questions, share small opinions, use casual contractions (I'm, that's, you're). Keep replies to 1-2 short sentences max. Sound warm and spontaneous, not scripted. TIME_HINT After your reply on a new line: CORRECTION: [corrected user English or CORRECTION:OK]`,
    open:`Welcome to Sunrise Café! What can I get for you today? ☕`,
    hints:["I'd like a latte, please.","What's your special today?","Could I get that to go?","How much is it?"]},
   {id:'hotel',ic:'🏨',nm:'ホテルチェックイン',lv:'初級',
-   sys:`You are a professional hotel receptionist. Respond ONLY in English, politely, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Jamie, a helpful hotel receptionist. Talk like a real person — friendly, relaxed, using natural everyday English. Ask follow-up questions to keep the conversation going. Keep replies to 1-2 sentences. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good evening! Welcome to Grand Palace Hotel. Do you have a reservation with us?`,
    hints:["I have a reservation under Tanaka.","I'd like a non-smoking room.","What time is checkout?","Is breakfast included?"]},
   {id:'airport',ic:'✈️',nm:'空港・搭乗手続き',lv:'中級',
-   sys:`You are an airline check-in agent. Respond ONLY in English, professionally, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Sam, a check-in agent at the airport. Be natural and conversational, use everyday English phrases. Keep things moving like a real check-in conversation. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! Where are you flying to today? May I see your passport?`,
    hints:["I'm flying to London.","I'd like a window seat.","Is the flight on time?","My luggage seems overweight."]},
   {id:'rest',ic:'🍽️',nm:'レストラン注文',lv:'初級',
-   sys:`You are a friendly restaurant server. Respond ONLY in English, warmly, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Taylor, a friendly server at a casual restaurant. Sound like a real person, not a script — use everyday words, light humor, share quick recommendations. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hello! Can I start you off with something to drink?`,
    hints:["I'll have the steak, please.","What do you recommend?","Is this dish spicy?","Could I see the dessert menu?"]},
   {id:'doctor',ic:'🏥',nm:'病院・診察',lv:'中級',
-   sys:`You are a kind doctor at an English clinic. Respond ONLY in English, empathetically, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Dr. Kim, a friendly GP at a local clinic. Use plain everyday English, not medical jargon. Be warm and natural, ask follow-up questions. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! I'm Dr. Smith. What brings you in today?`,
    hints:["I have a bad headache.","I've had a fever since yesterday.","It hurts when I breathe.","Do I need a prescription?"]},
   {id:'shop',ic:'🛍️',nm:'ショッピング',lv:'初級',
-   sys:`You are a helpful shop assistant. Respond ONLY in English, helpfully, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Riley, a shop assistant at a clothing store. Be chatty and natural like a real shop worker — compliment choices, give honest opinions, use everyday casual English. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hi there! Welcome! Are you looking for something specific today? 😊`,
    hints:["Do you have this in blue?","What sizes do you have?","Can I try this on?","Is this on sale?"]},
   {id:'biz',ic:'💼',nm:'ビジネス会議',lv:'上級',
-   sys:`You are a professional business colleague in an English meeting. Respond ONLY in English, professionally, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Jordan, a friendly colleague in an English-speaking office. Keep it real and conversational — not stiff. Mix professional with casual, like real workplace small talk. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! Could you give us a quick project update?`,
    hints:["I'd like to propose a new approach.","Could you clarify that point?","I fully agree with your suggestion.","Let's schedule a follow-up meeting."]},
   {id:'dir',ic:'🗺️',nm:'道案内・観光',lv:'初級',
-   sys:`You are a friendly local helping a tourist. Respond ONLY in English, helpfully, 2-3 sentences. After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are a friendly local who loves chatting with visitors. Give directions naturally, add tips and personal recommendations like a real person would. Keep it short and warm. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hello! Are you visiting our city? Happy to help you find your way!`,
    hints:["How do I get to the station?","Is it far from here?","Can I walk there?","What's worth seeing nearby?"]},
 ];
@@ -617,9 +698,38 @@ function changeKey(){groqKey='';localStorage.removeItem(API_KEY_STORE);document.
 
 // Scenarios
 function initScens(){document.getElementById('scen-grid').innerHTML=SCENS.map(s=>`<div class="scen-card" id="sc-${s.id}" onclick="selScen('${s.id}')"><div class="scen-ic">${s.ic}</div><div class="scen-nm">${s.nm}</div><div class="scen-lv">${s.lv}</div></div>`).join('');}
+function selTime(min){
+  sessionMinutes=min;
+  ['3','5','free'].forEach(k=>{const b=document.getElementById('time-'+k);if(b)b.classList.remove('on');});
+  const key=min===3?'3':min===5?'5':'free';
+  const btn=document.getElementById('time-'+key);
+  if(btn)btn.classList.add('on');
+}
 function selScen(id){dScen=SCENS.find(s=>s.id===id);document.querySelectorAll('.scen-card').forEach(c=>c.classList.remove('on'));document.getElementById('sc-'+id).classList.add('on');document.getElementById('d-start-btn').disabled=false;}
-function startChat(){if(!dScen)return;dMsgs=[];msgId=0;cSpeech='';msgStore.clear();document.getElementById('msgs').innerHTML='';document.getElementById('chat-badge').textContent=dScen.ic+' '+dScen.nm;document.getElementById('hint-row').innerHTML=dScen.hints.map(h=>`<span class="hint" onclick="useHint('${escA(h)}')">${esc(h)}</span>`).join('');resetVoiceDisp();showDV('chat');addAIBubble(dScen.open);}
-function backToScen(){window.speechSynthesis&&window.speechSynthesis.cancel();stopCMic();showDV('scen');}
+function startChat(){
+  if(!dScen)return;
+  dMsgs=[];msgId=0;cSpeech='';msgStore.clear();
+  document.getElementById('msgs').innerHTML='';
+  document.getElementById('chat-badge').textContent=dScen.ic+' '+dScen.nm;
+  document.getElementById('hint-row').innerHTML=dScen.hints.map(h=>`<span class="hint" onclick="useHint('${escA(h)}')">${esc(h)}</span>`).join('');
+  resetVoiceDisp();
+  showDV('chat');
+  // タイマー開始
+  startTimer();
+  // TIME_HINT をシステムプロンプトに埋め込む（時間モードによって変化）
+  buildDScenSys();
+  addAIBubble(dScen.open);
+}
+
+function buildDScenSys(){
+  // TIME_HINT をプロンプト内に埋め込む
+  let hint='';
+  if(sessionMinutes===3) hint='You have about 3 minutes total. Around the 2:30 mark, naturally start wrapping up the conversation.';
+  else if(sessionMinutes===5) hint='You have about 5 minutes total. Around the 4:30 mark, naturally start wrapping up the conversation.';
+  else hint='There is no time limit. Keep the conversation going naturally.';
+  dScen._sys = dScen.sys.replace('TIME_HINT', hint);
+}
+function backToScen(){clearInterval(timerInterval);document.getElementById('session-bar').classList.remove('active');window.speechSynthesis&&window.speechSynthesis.cancel();stopCMic();showDV('scen');}
 
 // Chat bubbles
 function addAIBubble(text){
@@ -683,7 +793,12 @@ async function sendSpeech(){
   dLoading=true;document.getElementById('csend').disabled=true;addTyping();
   try{
     const hist=dMsgs.slice(-16).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
-    const sysMsg={role:'system',content:dScen.sys};
+    let sysContent=dScen._sys||dScen.sys;
+    if(window._wrapUpPending){
+      sysContent+=' [The session ends in about 30 seconds. Please naturally wrap up the conversation with a warm goodbye in this reply.]';
+      window._wrapUpPending=false;
+    }
+    const sysMsg={role:'system',content:sysContent};
     let raw=await groqCall([sysMsg,...hist],420);
     let corr=null;const m=raw.match(/\nCORRECTION:\s*(.+)$/s);
     if(m){const cv=m[1].trim();corr=(cv==='OK'||cv.toLowerCase()==='ok')?null:cv;raw=raw.replace(/\nCORRECTION:.*$/s,'').trim();}
@@ -697,6 +812,121 @@ async function sendSpeech(){
 }
 
 // TTS → 自動マイク
+// ── タイマー ──
+function startTimer(){
+  clearInterval(timerInterval);
+  sessionStartTime=Date.now();
+  if(sessionMinutes===0){
+    // 自由モード：タイマーバーを非表示
+    document.getElementById('session-bar').classList.remove('active');
+    return;
+  }
+  timerTotal=sessionMinutes*60;
+  timerSec=timerTotal;
+  document.getElementById('session-bar').classList.add('active');
+  document.getElementById('timer-mode-lbl').textContent=sessionMinutes+'分モード';
+  updateTimerUI();
+  timerInterval=setInterval(()=>{
+    timerSec--;
+    updateTimerUI();
+    // 残り30秒でAIに締め括りを促す
+    if(timerSec===30) triggerWrapUp();
+    // 時間切れ
+    if(timerSec<=0){
+      clearInterval(timerInterval);
+      timeUpEnd();
+    }
+  },1000);
+}
+
+function updateTimerUI(){
+  const m=Math.floor(timerSec/60);
+  const s=String(timerSec%60).padStart(2,'0');
+  const disp=document.getElementById('timer-display');
+  const fill=document.getElementById('timer-bar-fill');
+  const pct=Math.max(0,timerSec/timerTotal*100);
+  disp.textContent=m+':'+s;
+  fill.style.width=pct+'%';
+  // 色変化
+  if(timerSec<=30){
+    disp.className='timer-display danger';
+    fill.className='timer-bar-fill danger';
+  } else if(timerSec<=60){
+    disp.className='timer-display warn';
+    fill.className='timer-bar-fill warn';
+  } else {
+    disp.className='timer-display';
+    fill.className='timer-bar-fill';
+  }
+}
+
+async function triggerWrapUp(){
+  // AIに会話の締め括りを促す（システムからメッセージ注入）
+  if(dLoading)return;
+  const wrapMsg={role:'system',content:'[INTERNAL NOTE - not visible to user] The session is about to end in 30 seconds. Naturally wrap up the conversation in your next reply. Say something like finishing up the order, wishing them a great day, or a friendly goodbye. Keep it natural and warm.'};
+  // 特別フラグで次のAI返答に締め括り指示を入れる
+  window._wrapUpPending=true;
+}
+
+function timeUpEnd(){
+  stopCMic(false);
+  window.speechSynthesis&&window.speechSynthesis.cancel();
+  // AIに締め括りメッセージを言わせる
+  const farewells=[
+    "Well, our time is up! It was really nice chatting with you. Keep practicing your English — you're doing great! 😊",
+    "Oh, looks like our session is ending! It was lovely talking with you today. You did wonderfully!",
+    "Time flies when we're having a great conversation! Thanks so much for chatting — see you next time! 👋",
+  ];
+  const msg=farewells[Math.floor(Math.random()*farewells.length)];
+  addAIBubble(msg);
+  setTimeout(()=>showSummary(false),2000);
+}
+
+function forceEndSession(){
+  if(!confirm('会話を終了しますか？'))return;
+  clearInterval(timerInterval);
+  stopCMic(false);
+  window.speechSynthesis&&window.speechSynthesis.cancel();
+  showSummary(true);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval);
+  document.getElementById('session-bar').classList.remove('active');
+}
+
+function showSummary(forced){
+  stopTimer();
+  const elapsed=sessionStartTime?Math.floor((Date.now()-sessionStartTime)/1000):0;
+  const em=Math.floor(elapsed/60),es=String(elapsed%60).padStart(2,'0');
+  const userMsgs=dMsgs.filter(m=>m.role==='user');
+  const wordCount=userMsgs.reduce((a,m)=>a+m.content.split(/\s+/).filter(Boolean).length,0);
+  const turns=userMsgs.length;
+  document.getElementById('sum-turns').textContent=turns;
+  document.getElementById('sum-words').textContent=wordCount;
+  document.getElementById('sum-time').textContent=em+':'+es;
+  document.getElementById('summary-icon').textContent=forced?'⏹':'🏆';
+  document.getElementById('summary-title').textContent=forced?'会話を終了しました':'会話完了！';
+  document.getElementById('summary-sub').textContent=dScen.ic+' '+dScen.nm+' · '+(sessionMinutes?sessionMinutes+'分モード':'自由モード');
+  // 会話ログ（最後の8件）
+  const log=document.getElementById('summary-log');
+  const recent=dMsgs.slice(-8);
+  log.innerHTML=recent.map(m=>`<div class="summary-log-item">
+    <div class="${m.role==='assistant'?'role-ai':'role-user'}">${m.role==='assistant'?'AI':'あなた'}</div>
+    <div>${esc(m.content.substring(0,80)+(m.content.length>80?'...':''))}</div>
+  </div>`).join('');
+  document.getElementById('summary-overlay').classList.add('active');
+}
+
+function closeSummaryAndRestart(){
+  document.getElementById('summary-overlay').classList.remove('active');
+  startChat();
+}
+function closeSummaryToScen(){
+  document.getElementById('summary-overlay').classList.remove('active');
+  backToScen();
+}
+
 function speakThenMic(text){
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
