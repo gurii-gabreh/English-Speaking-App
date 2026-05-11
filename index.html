@@ -263,6 +263,18 @@ a{color:var(--teal);}
 
 /* 復習モード */
 #review-mode .psent{font-size:18px;line-height:1.6;padding:12px;background:var(--teal-l);border-radius:10px;border-left:4px solid var(--teal);}
+
+/* クリア・停止ボタン */
+.cbtn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;font-family:'Nunito',sans-serif;background:var(--card);}
+.cbtn-clear{color:var(--t3);}
+.cbtn-clear:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+.cbtn-stop{color:var(--red);border-color:rgba(192,57,43,0.3);background:var(--red-l);}
+.cbtn-stop:hover{background:var(--red);color:#fff;}
+.cbtn-stop.hidden-btn{display:none;}
+.input-action-row{display:flex;align-items:center;gap:5px;margin-top:6px;justify-content:flex-end;}
+.inp-action-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:4px;transition:all .15s;}
+.inp-action-btn:hover{border-color:var(--teal);color:var(--teal);}
+.inp-action-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
 </style>
 </head>
 <body>
@@ -343,7 +355,7 @@ a{color:var(--teal);}
         <span style="font-size:13px;font-weight:700;color:#1e3a5a;">英文を入力</span>
         <div style="display:flex;gap:6px;">
           <button class="btn-sm btn-ot" onclick="loadEx()">📋 例文</button>
-          <button class="btn-sm btn-rd hidden" id="cl-btn" onclick="clrInput()">🗑 クリア</button>
+          <button class="btn-sm btn-rd" id="cl-btn" onclick="clrInput()" style="display:none;">✕ クリア</button>
         </div>
       </div>
       <textarea class="pta" id="p-ta" oninput="onPI()" placeholder="例:&#10;The weather is beautiful today.&#10;I would like to order a coffee, please.&#10;Could you repeat that more slowly?"></textarea>
@@ -522,10 +534,19 @@ a{color:var(--teal);}
         <div class="hint-row" id="hint-row"></div>
         <div class="input-row">
           <div class="voice-display" id="voice-disp">🎤 マイクボタンを押して話しかけてください</div>
-          <button class="cicbtn cmic" id="cmic" onclick="toggleCMic()" title="音声入力">🎤</button>
+          <!-- 停止ボタン: 録音中のみ表示 -->
+          <button class="cbtn cbtn-stop hidden-btn" id="cstop-btn" onclick="stopCMic(true)" title="録音停止して送信">⏹</button>
+          <!-- クリアボタン: テキストあるとき表示 -->
+          <button class="cbtn cbtn-clear hidden-btn" id="cclear-btn" onclick="clearVoiceInput()" title="クリア">✕</button>
+          <!-- マイクボタン -->
+          <button class="cicbtn cmic" id="cmic" onclick="toggleCMic()" title="音声入力 ON/OFF">🎤</button>
+          <!-- 送信ボタン -->
           <button class="cicbtn csend" id="csend" onclick="sendSpeech()" disabled title="送信">➤</button>
         </div>
         <div id="auto-mic-bar" class="auto-mic-bar hidden">🎤 AI返答完了 — 話しかけてください</div>
+        <div class="input-action-row" id="voice-action-row" style="display:none;">
+          <span style="font-size:11px;color:var(--t3);" id="voice-char-count"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -536,8 +557,16 @@ a{color:var(--teal);}
 <aside class="side-col">
   <div>
     <div class="panel-lbl">🇯🇵 日本語 → 英語 翻訳</div>
-    <textarea class="side-ta" id="jp-ta" placeholder="日本語を入力...&#10;例: コーヒーを一つください"></textarea>
+    <div style="position:relative;">
+      <textarea class="side-ta" id="jp-ta" placeholder="日本語を入力...&#10;例: コーヒーを一つください" oninput="onJpInput()"></textarea>
+      <button id="jp-clear-btn" onclick="clearJpInput()" title="クリア"
+        style="display:none;position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:none;background:var(--border);color:var(--t2);font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center;font-weight:700;line-height:1;">✕</button>
+    </div>
     <button class="sbtn sbtn-mic" id="jp-mic-btn" onclick="toggleJpMic()">🎤 音声で入力（日本語）</button>
+    <button class="sbtn" id="jp-stop-btn" onclick="stopJpMicAndClear()"
+      style="display:none;background:var(--red-l);border:1.5px solid var(--red);color:var(--red);border-radius:8px;padding:7px;font-size:12px;font-weight:700;cursor:pointer;justify-content:center;align-items:center;gap:5px;width:100%;margin-top:5px;">
+      ⏹ 音声入力を停止
+    </button>
     <button class="sbtn sbtn-teal" onclick="doTranslate()">🔄 英語に翻訳する</button>
     <div class="trans-box empty" id="trans-box">翻訳結果がここに表示されます</div>
     <button class="sbtn sbtn-out hidden" id="use-trans" onclick="useTranslation()">↗ チャットに使う</button>
@@ -1140,14 +1169,39 @@ function speak(text){
 // 読み取り専用ボイス表示
 function resetVoiceDisp(){
   cSpeech='';
-  const d=document.getElementById('voice-disp');d.className='voice-display';d.textContent='🎤 マイクボタンを押して話しかけてください';
-  document.getElementById('csend').disabled=true;document.getElementById('auto-mic-bar').classList.add('hidden');
+  const d=document.getElementById('voice-disp');
+  d.className='voice-display';
+  d.textContent='🎤 マイクボタンを押して話しかけてください';
+  document.getElementById('csend').disabled=true;
+  document.getElementById('auto-mic-bar').classList.add('hidden');
+  // クリア・停止ボタンを隠す
+  document.getElementById('cstop-btn').classList.add('hidden-btn');
+  document.getElementById('cclear-btn').classList.add('hidden-btn');
+}
+
+// チャット入力をクリア
+function clearVoiceInput(){
+  if(cMicOn) stopCMic(false);
+  resetVoiceDisp();
 }
 function updateVoiceDisp(text,state){
   const d=document.getElementById('voice-disp');
   d.className='voice-display '+(state==='listening'?'listening':state==='ready'?'ready':'');
   if(text){d.innerHTML=`<span class="live-txt">${esc(text)}</span>`;}
-  else{d.textContent=state==='listening'?'🔴 録音中... ⏹️で停止して送信':'🎤 マイクボタンを押して話しかけてください';}
+  else{d.textContent=state==='listening'?'🔴 録音中... ⏹で停止':'🎤 マイクボタンを押して話しかけてください';}
+  // ボタン表示制御
+  const stopBtn=document.getElementById('cstop-btn');
+  const clearBtn=document.getElementById('cclear-btn');
+  if(state==='listening'){
+    stopBtn.classList.remove('hidden-btn');  // 停止ボタン表示
+    clearBtn.classList.add('hidden-btn');    // クリアは非表示
+  } else if(state==='ready'&&text){
+    stopBtn.classList.add('hidden-btn');     // 停止非表示
+    clearBtn.classList.remove('hidden-btn'); // クリアボタン表示
+  } else {
+    stopBtn.classList.add('hidden-btn');
+    clearBtn.classList.add('hidden-btn');
+  }
 }
 
 // Chat Mic — continuous, readonly
@@ -1194,13 +1248,51 @@ function useHint(h){
 }
 
 // JP Mic
+function clearJpInput(){
+  document.getElementById('jp-ta').value='';
+  document.getElementById('jp-clear-btn').style.display='none';
+  document.getElementById('trans-box').textContent='翻訳結果がここに表示されます';
+  document.getElementById('trans-box').classList.add('empty');
+  document.getElementById('use-trans').classList.add('hidden');
+}
+function onJpInput(){
+  const v=document.getElementById('jp-ta').value;
+  const btn=document.getElementById('jp-clear-btn');
+  btn.style.display=v.trim()?'flex':'none';
+}
+function stopJpMicAndClear(){
+  if(jpMicOn){jpMicOn=false;try{jpMicRec&&jpMicRec.stop();}catch(e){}}
+  document.getElementById('jp-mic-btn').classList.remove('active');
+  document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+  document.getElementById('jp-stop-btn').style.display='none';
+}
+
 function toggleJpMic(){
-  if(jpMicOn){jpMicOn=false;try{jpMicRec&&jpMicRec.stop();}catch(e){}document.getElementById('jp-mic-btn').classList.remove('active');document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';return;}
+  if(jpMicOn){jpMicOn=false;try{jpMicRec&&jpMicRec.stop();}catch(e){}
+    document.getElementById('jp-mic-btn').classList.remove('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+    document.getElementById('jp-stop-btn').style.display='none';
+    return;}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Chrome推奨');return;}
   const r=new SR();r.lang='ja-JP';r.continuous=true;r.interimResults=true;let finalJp='';
-  r.onstart=()=>{jpMicOn=true;finalJp='';document.getElementById('jp-mic-btn').classList.add('active');document.getElementById('jp-mic-btn').textContent='⏹️ 停止';document.getElementById('jp-ta').value='';};
+  r.onstart=()=>{
+    jpMicOn=true;finalJp='';
+    document.getElementById('jp-mic-btn').classList.add('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 録音中...';
+    document.getElementById('jp-stop-btn').style.display='flex';
+    document.getElementById('jp-clear-btn').style.display='none';
+    document.getElementById('jp-ta').value='';
+  };
   r.onresult=(e)=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalJp+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}document.getElementById('jp-ta').value=(finalJp+interim).trim();};
-  r.onend=()=>{if(jpMicOn){try{r.start();}catch(e){}return;}document.getElementById('jp-mic-btn').classList.remove('active');document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';};
+  r.onend=()=>{
+    if(jpMicOn){try{r.start();}catch(e){}return;}
+    document.getElementById('jp-mic-btn').classList.remove('active');
+    document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
+    document.getElementById('jp-stop-btn').style.display='none';
+    // テキストがあればクリアボタン表示
+    if(document.getElementById('jp-ta').value.trim())
+      document.getElementById('jp-clear-btn').style.display='flex';
+  };
   r.onerror=(ev)=>{if(ev.error==='no-speech')return;jpMicOn=false;document.getElementById('jp-mic-btn').classList.remove('active');document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';};
   jpMicRec=r;r.start();
 }
@@ -1215,7 +1307,7 @@ async function doTranslate(){
 function useTranslation(){const t=document.getElementById('trans-box').textContent;if(t&&curTab==='dial')useHint(t);}
 
 // Practice Mode
-function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').classList[v.trim()?'remove':'add']('hidden');const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
+function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').style.display=v.trim()?'':'none';const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
 function loadEx(){document.getElementById('p-ta').value=EXAMPLE;onPI();}
 function clrInput(){document.getElementById('p-ta').value='';onPI();}
 function toggleAuto(){isAuto=!isAuto;['auto-tog','auto-tog2'].forEach(id=>{const b=document.getElementById(id);b.className='auto-tog '+(isAuto?'on':'off');});document.querySelectorAll('#auto-lbl,#auto-lbl2').forEach(el=>el.textContent=isAuto?'ON':'OFF');}
