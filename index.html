@@ -260,6 +260,9 @@ a{color:var(--teal);}
 .summary-btn-teal{background:var(--teal);color:#fff;}
 .summary-btn-org{background:var(--orange);color:#fff;}
 @keyframes timerPulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* 復習モード */
+#review-mode .psent{font-size:18px;line-height:1.6;padding:12px;background:var(--teal-l);border-radius:10px;border-left:4px solid var(--teal);}
 </style>
 </head>
 <body>
@@ -272,6 +275,7 @@ a{color:var(--teal);}
     <div class="tab-bar">
       <button class="tab on" id="tab-prac" onclick="switchTab('prac')">📝 発音練習</button>
       <button class="tab" id="tab-dial" onclick="switchTab('dial')">💬 英会話</button>
+      <button class="tab" id="tab-review" onclick="switchTab('review')">🔁 復習</button>
     </div>
     <!-- AIサポートモード 3段切替 -->
     <div style="display:flex;align-items:center;gap:4px;background:var(--card2);padding:3px;border-radius:10px;">
@@ -428,6 +432,40 @@ a{color:var(--teal);}
   </div>
 </div>
 
+<!-- 復習モード -->
+<div id="review-mode" class="hidden">
+  <div class="hero">
+    <div class="hero-badge">🔁 復習モード</div>
+    <h2 class="hero-h">間違えた表現を復習しよう</h2>
+    <p class="hero-p">AI補正・文法指摘された内容を繰り返し練習できます。</p>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="btn-sm btn-ot" onclick="renderReviewMode()">🔄 更新</button>
+    <button class="btn-sm" style="background:var(--green-l);border:1.5px solid var(--green);color:var(--green);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="exportCorrHist()">📥 エクスポート</button>
+    <button class="btn-sm btn-rd" onclick="clearCorrHist()">🗑 履歴を削除</button>
+  </div>
+  <div id="review-area"></div>
+
+  <!-- 復習練習パネル -->
+  <div id="review-practice-panel" class="card hidden" style="margin-top:16px;">
+    <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;">🎯 この文を練習する</div>
+    <div id="rev-target-sentence" class="psent" style="font-size:17px;margin-bottom:16px;"></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <button class="btn-sm btn-ot" id="rev-tts-btn" onclick="revPlayTTS()">🔊 手本を聴く</button>
+      <div class="mic-ring" id="rev-mic" onclick="revToggleRec()" style="width:60px;height:60px;">
+        <span style="font-size:22px;z-index:1;" id="rev-mic-ic">🎤</span>
+      </div>
+      <p style="font-size:12px;font-weight:700;color:var(--t2);" id="rev-status">タップして録音</p>
+      <div id="rev-result" class="hidden" style="width:100%;padding:8px 12px;border-radius:9px;background:var(--card2);font-size:12px;font-family:'Lora',serif;color:var(--t2);"></div>
+    </div>
+    <div id="rev-score-area" style="margin-top:14px;"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn-sm btn-ot" onclick="closeRevPanel()">← 一覧に戻る</button>
+      <button class="btn-sm" style="background:var(--teal);color:#fff;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;border:none;" onclick="revPlayTTS();setTimeout(revToggleRec,1800)">▶ もう一度</button>
+    </div>
+  </div>
+</div>
+
 <!-- DIALOGUE MODE -->
 <div id="dial-mode" class="hidden">
   <div id="dv-key">
@@ -551,35 +589,99 @@ const EXAMPLE=`The weather is beautiful today.\nI would like to order a coffee, 
 
 const SCENS=[
   {id:'cafe',ic:'☕',nm:'カフェ注文',lv:'初級',
-   sys:`You are Alex, a friendly barista at Sunrise Café. Chat naturally like a real person — ask follow-up questions, share small opinions, use casual contractions (I'm, that's, you're). Keep replies to 1-2 short sentences max. Sound warm and spontaneous, not scripted. TIME_HINT After your reply on a new line: CORRECTION: [corrected user English or CORRECTION:OK]`,
+   sys:`You are Alex, a barista at Sunrise Café. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Example good reply: "Oh, a latte! Good choice — hot or iced?" Bad reply: "Certainly! I would be happy to prepare a latte for you. Would you prefer hot or cold?" TIME_HINT\nAfter your reply on a new line: CORRECTION: [corrected user English or CORRECTION:OK]`,
    open:`Welcome to Sunrise Café! What can I get for you today? ☕`,
    hints:["I'd like a latte, please.","What's your special today?","Could I get that to go?","How much is it?"]},
   {id:'hotel',ic:'🏨',nm:'ホテルチェックイン',lv:'初級',
-   sys:`You are Jamie, a helpful hotel receptionist. Talk like a real person — friendly, relaxed, using natural everyday English. Ask follow-up questions to keep the conversation going. Keep replies to 1-2 sentences. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Jamie, a hotel receptionist. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Example: "Oh, Tanaka! Let me pull that up — just one sec." TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good evening! Welcome to Grand Palace Hotel. Do you have a reservation with us?`,
    hints:["I have a reservation under Tanaka.","I'd like a non-smoking room.","What time is checkout?","Is breakfast included?"]},
   {id:'airport',ic:'✈️',nm:'空港・搭乗手続き',lv:'中級',
-   sys:`You are Sam, a check-in agent at the airport. Be natural and conversational, use everyday English phrases. Keep things moving like a real check-in conversation. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Sam, an airline check-in agent. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Example: "London! Nice. Window or aisle?" TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! Where are you flying to today? May I see your passport?`,
    hints:["I'm flying to London.","I'd like a window seat.","Is the flight on time?","My luggage seems overweight."]},
   {id:'rest',ic:'🍽️',nm:'レストラン注文',lv:'初級',
-   sys:`You are Taylor, a friendly server at a casual restaurant. Sound like a real person, not a script — use everyday words, light humor, share quick recommendations. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Taylor, a restaurant server. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Example: "Oh the steak is SO good today — chef just got fresh ones in." TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hello! Can I start you off with something to drink?`,
    hints:["I'll have the steak, please.","What do you recommend?","Is this dish spicy?","Could I see the dessert menu?"]},
   {id:'doctor',ic:'🏥',nm:'病院・診察',lv:'中級',
-   sys:`You are Dr. Kim, a friendly GP at a local clinic. Use plain everyday English, not medical jargon. Be warm and natural, ask follow-up questions. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Dr. Kim, a friendly GP. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Use simple plain English, zero jargon. Example: "Oh no, headaches are no fun — how long's it been going on?" TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! I'm Dr. Smith. What brings you in today?`,
    hints:["I have a bad headache.","I've had a fever since yesterday.","It hurts when I breathe.","Do I need a prescription?"]},
   {id:'shop',ic:'🛍️',nm:'ショッピング',lv:'初級',
-   sys:`You are Riley, a shop assistant at a clothing store. Be chatty and natural like a real shop worker — compliment choices, give honest opinions, use everyday casual English. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Riley, a clothing store assistant. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Example: "Oh that blue one is really popular right now — want me to grab your size?" TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hi there! Welcome! Are you looking for something specific today? 😊`,
    hints:["Do you have this in blue?","What sizes do you have?","Can I try this on?","Is this on sale?"]},
   {id:'biz',ic:'💼',nm:'ビジネス会議',lv:'上級',
-   sys:`You are Jordan, a friendly colleague in an English-speaking office. Keep it real and conversational — not stiff. Mix professional with casual, like real workplace small talk. 1-2 sentences max. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are Jordan, an office colleague. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Mix work chat with real human conversation. Example: "Oh nice update — honestly that's better than I expected, ha." TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Good morning! Could you give us a quick project update?`,
    hints:["I'd like to propose a new approach.","Could you clarify that point?","I fully agree with your suggestion.","Let's schedule a follow-up meeting."]},
   {id:'dir',ic:'🗺️',nm:'道案内・観光',lv:'初級',
-   sys:`You are a friendly local who loves chatting with visitors. Give directions naturally, add tips and personal recommendations like a real person would. Keep it short and warm. TIME_HINT After your reply: CORRECTION: [corrected or CORRECTION:OK]`,
+   sys:`You are a friendly local. VERY IMPORTANT conversation style rules:
+- Talk like a REAL human, not a customer service bot
+- Use contractions always: I'm, you're, that's, it's, don't, isn't, can't
+- Use filler words naturally: "Oh!", "Sure!", "Hmm", "Yeah", "Oh wow", "Nice!"
+- React to what the user says FIRST before moving forward
+- Ask only ONE question at a time
+- Max 1-2 short sentences. Never list things.
+- Use casual vocabulary: "grab" not "obtain", "sounds good" not "that would be acceptable"
+- Show personality: be warm, slightly funny when natural, genuinely interested Give directions like a real person would to a friend. Example: "Oh the station? Yeah, super easy — just go straight and you'll see it." TIME_HINT\nAfter your reply: CORRECTION: [corrected or CORRECTION:OK]`,
    open:`Hello! Are you visiting our city? Happy to help you find your way!`,
    hints:["How do I get to the station?","Is it far from here?","Can I walk there?","What's worth seeing nearby?"]},
 ];
@@ -616,7 +718,19 @@ function setAiMode(m){
 function setSpd(v,k){ttsSpeed=v;['slow','norm','fast'].forEach(x=>document.getElementById('spd-'+x).classList.remove('on'));document.getElementById('spd-'+k).classList.add('on');}
 
 // Tab
-function switchTab(t){curTab=t;document.getElementById('tab-prac').classList[t==='prac'?'add':'remove']('on');document.getElementById('tab-dial').classList[t==='dial'?'add':'remove']('on');document.getElementById('prac-mode').classList[t==='prac'?'remove':'add']('hidden');document.getElementById('dial-mode').classList[t==='dial'?'remove':'add']('hidden');document.getElementById('hist-sect').classList[t==='prac'?'remove':'add']('hidden');if(t==='dial'){groqKey?showDV('scen'):showDV('key');}}
+function switchTab(t){
+  curTab=t;
+  ['prac','dial','review'].forEach(k=>{
+    const b=document.getElementById('tab-'+k);
+    if(b)b.classList[k===t?'add':'remove']('on');
+  });
+  document.getElementById('prac-mode').classList[t==='prac'?'remove':'add']('hidden');
+  document.getElementById('dial-mode').classList[t==='dial'?'remove':'add']('hidden');
+  document.getElementById('review-mode').classList[t==='review'?'remove':'add']('hidden');
+  document.getElementById('hist-sect').classList[t==='prac'?'remove':'add']('hidden');
+  if(t==='dial'){groqKey?showDV('scen'):showDV('key');}
+  if(t==='review'){renderReviewMode();}
+}
 function showDV(v){['key','scen','chat'].forEach(x=>document.getElementById('dv-'+x).classList.add('hidden'));document.getElementById('dv-'+v).classList.remove('hidden');}
 
 // Groq API
@@ -785,24 +899,101 @@ document.addEventListener('click', function(e){
   }
 });
 
+// ── 修正履歴保存 ──
+const CORRECTION_HIST_KEY='eng_correction_hist_v1';
+function getCorrHist(){try{return JSON.parse(localStorage.getItem(CORRECTION_HIST_KEY)||'[]');}catch{return[];}}
+function saveCorrHist(item){
+  const h=getCorrHist();
+  h.unshift(item);
+  if(h.length>200)h.pop();
+  localStorage.setItem(CORRECTION_HIST_KEY,JSON.stringify(h));
+}
+
+// ── AI文脈補正 (aiMode=nuance/pron時) ──
+async function aiContextCorrect(spokenText, conversationHist){
+  if(!groqKey||aiMode==='off') return {corrected:spokenText, issues:[]};
+  const recentAI=conversationHist.filter(m=>m.role==='assistant').slice(-1)[0]?.content||'';
+  const prompt=`You are helping a Japanese English learner. Speech recognition may have made errors.
+
+AI just said: "${recentAI}"
+User tried to say (speech recognition result): "${spokenText}"
+
+This is an English conversation. The user's speech recognition result may contain errors caused by:
+- Pronunciation mistakes (e.g., "wood" instead of "would", "tree" instead of "three")
+- Similar-sounding words (e.g., "beer" instead of "bear")
+- Missing or extra words
+
+Please:
+1. Correct any obvious speech recognition errors based on context
+2. List what was wrong (in Japanese, max 2 items)
+3. Only fix clear errors, don't change the user's intended meaning
+
+Reply ONLY as valid JSON:
+{"corrected":"the corrected English sentence","issues":["間違い1（例: would → wood と聞こえた）","間違い2"],"had_errors":true}
+If no errors: {"corrected":"${spokenText}","issues":[],"had_errors":false}`;
+  try{
+    const r=await groqCall([{role:'user',content:prompt}],400);
+    if(!r)return {corrected:spokenText,issues:[]};
+    const clean=r.replace(/```json|```/g,'').trim();
+    const s=clean.indexOf('{');const e=clean.lastIndexOf('}')+1;
+    return JSON.parse(clean.slice(s,e));
+  }catch(e){return {corrected:spokenText,issues:[]};}
+}
+
 // Send
 async function sendSpeech(){
-  const text=cSpeech.trim();if(!text||dLoading)return;
-  stopCMic();resetVoiceDisp();
-  const uid=addUserBubble(text);
-  dLoading=true;document.getElementById('csend').disabled=true;addTyping();
+  const rawSpeech=cSpeech.trim();if(!rawSpeech||dLoading)return;
+  stopCMic(false);resetVoiceDisp();
+  dLoading=true;document.getElementById('csend').disabled=true;
+  
+  // AI補助モード時：まず文脈補正
+  let textToSend=rawSpeech;
+  let aiCorrection=null;
+  if(aiMode!=='off'&&groqKey){
+    addTyping();
+    const hist=dMsgs.slice(-6);
+    aiCorrection=await aiContextCorrect(rawSpeech,hist);
+    rmTyping();
+    if(aiCorrection.had_errors&&aiCorrection.corrected!==rawSpeech){
+      textToSend=aiCorrection.corrected;
+    }
+  }
+  
+  const uid=addUserBubble(rawSpeech, textToSend, aiCorrection);
+  addTyping();
+  
   try{
-    const hist=dMsgs.slice(-16).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.content}));
+    const hist=dMsgs.slice(-16).map(m=>(({role:m.role==='assistant'?'assistant':'user',content:m.content})));
     let sysContent=dScen._sys||dScen.sys;
     if(window._wrapUpPending){
       sysContent+=' [The session ends in about 30 seconds. Please naturally wrap up the conversation with a warm goodbye in this reply.]';
       window._wrapUpPending=false;
     }
     const sysMsg={role:'system',content:sysContent};
-    let raw=await groqCall([sysMsg,...hist],420);
-    let corr=null;const m=raw.match(/\nCORRECTION:\s*(.+)$/s);
-    if(m){const cv=m[1].trim();corr=(cv==='OK'||cv.toLowerCase()==='ok')?null:cv;raw=raw.replace(/\nCORRECTION:.*$/s,'').trim();}
-    rmTyping();if(corr)addCorrBtn(uid,corr);addAIBubble(raw);
+    // AI には補正済みテキストを送る
+    const histWithCorrected=[...dMsgs.slice(-15).map(m=>(({role:m.role==='assistant'?'assistant':'user',content:m.content}))),{role:'user',content:textToSend}];
+    let raw=await groqCall([sysMsg,...histWithCorrected.slice(0,-1)],420);
+    // push corrected text as last user message
+    dMsgs[dMsgs.length-1].content=textToSend;
+    let corr=null;const mx=raw.match(/\nCORRECTION:\s*(.+)$/s);
+    if(mx){const cv=mx[1].trim();corr=(cv==='OK'||cv.toLowerCase()==='ok')?null:cv;raw=raw.replace(/\nCORRECTION:.*$/s,'').trim();}
+    
+    // 修正があれば履歴に保存
+    if(aiCorrection?.had_errors||corr){
+      saveCorrHist({
+        date:new Date().toISOString(),
+        scenario:dScen?dScen.nm:'',
+        original:rawSpeech,
+        corrected:textToSend,
+        grammarFix:corr||null,
+        issues:aiCorrection?.issues||[],
+        context:dMsgs.slice(-3).map(m=>m.content.substring(0,60)).join(' / ')
+      });
+    }
+    
+    rmTyping();
+    if(corr)addCorrBtn(uid,corr);
+    addAIBubble(raw);
   }catch(e){
     rmTyping();
     if(e.status===401||e.status===403){document.getElementById('key-err').textContent='APIキーが無効です。';document.getElementById('key-err').style.display='block';groqKey='';localStorage.removeItem(API_KEY_STORE);showDV('key');}
@@ -1177,6 +1368,176 @@ function showFin(){const scores=pRes.map(r=>r.score);const avg=scores.length?Mat
 function endSess(){if(!confirm('練習を終了しますか？'))return;backPI();}
 function backPI(){window.speechSynthesis&&window.speechSynthesis.cancel();try{pRecRef&&pRecRef.abort();}catch(e){}['pv-sess','pv-fin'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById('pv-input').classList.remove('hidden');renderHist();}
 function restartP(){pIdx=0;pRes=[];pCur=null;pSaved=false;pFinal='';document.getElementById('pv-fin').classList.add('hidden');document.getElementById('pv-sess').classList.remove('hidden');setPStep('listen');updProg();}
+
+
+// ══ 復習モード ══
+let revCurrentSentence='';
+let revRec=null;
+let revRecOn=false;
+let revFinal='';
+
+function renderReviewMode(){
+  const hist=getCorrHist();
+  const area=document.getElementById('review-area');
+  if(!hist.length){
+    area.innerHTML=`<div class="hist-empty">🎉 まだ復習データがありません。<br>英会話モードでAIサポートをONにして会話すると、間違いが記録されます。</div>`;
+    return;
+  }
+  // シナリオ別にグループ化
+  const grouped={};
+  hist.forEach(h=>{
+    const k=h.scenario||'その他';
+    if(!grouped[k])grouped[k]=[];
+    grouped[k].push(h);
+  });
+  area.innerHTML=Object.entries(grouped).map(([scen,items])=>`
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:8px;">${esc(scen)} (${items.length}件)</div>
+      ${items.slice(0,20).map((item,i)=>`
+        <div class="hist-di card" style="margin-bottom:8px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--t3);margin-bottom:5px;">📅 ${fmtD(item.date)}</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;">
+              <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:2px;">あなたが言った</div>
+              <div style="font-family:'Lora',serif;font-size:13px;color:var(--t1);">${esc(item.original)}</div>
+              ${item.corrected&&item.corrected!==item.original?`
+                <div style="font-size:10px;font-weight:700;color:var(--green);margin:5px 0 2px;">→ AI補正後</div>
+                <div style="font-family:'Lora',serif;font-size:13px;color:#155a38;">${esc(item.corrected)}</div>
+              `:''}
+              ${item.grammarFix?`
+                <div style="font-size:10px;font-weight:700;color:var(--teal);margin:5px 0 2px;">✏️ 正しい英文</div>
+                <div style="font-family:'Lora',serif;font-size:12px;color:var(--teal);">${esc(item.grammarFix)}</div>
+              `:''}
+              ${(item.issues||[]).length?`
+                <div style="margin-top:5px;">${item.issues.map(iss=>`<div style="font-size:11px;color:var(--red);">⚠️ ${esc(iss)}</div>`).join('')}</div>
+              `:''}
+            </div>
+            <button onclick="startRevPractice('${encodeURIComponent(item.corrected||item.original)}')"
+              style="padding:6px 12px;border-radius:8px;background:var(--teal);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+              🎤 練習する
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function startRevPractice(enc){
+  const sentence=decodeURIComponent(enc);
+  revCurrentSentence=sentence;
+  document.getElementById('rev-target-sentence').textContent=sentence;
+  document.getElementById('rev-result').classList.add('hidden');
+  document.getElementById('rev-score-area').innerHTML='';
+  document.getElementById('rev-status').textContent='タップして録音';
+  document.getElementById('rev-mic').style.background='var(--orange)';
+  document.getElementById('rev-mic-ic').textContent='🎤';
+  document.getElementById('review-practice-panel').classList.remove('hidden');
+  document.getElementById('review-practice-panel').scrollIntoView({behavior:'smooth'});
+  revPlayTTS();
+}
+
+function closeRevPanel(){
+  document.getElementById('review-practice-panel').classList.add('hidden');
+  if(revRecOn)revStopRec();
+}
+
+function revPlayTTS(){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(revCurrentSentence);
+  u.lang='en-US';u.rate=ttsSpeed;u.pitch=1;
+  const vs=window.speechSynthesis.getVoices();
+  const v=vs.find(v=>v.lang.startsWith('en')&&(v.name.includes('Google')||v.name.includes('Natural')))||vs.find(v=>v.lang.startsWith('en'));
+  if(v)u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+
+function revToggleRec(){revRecOn?revStopRec():revStartRec();}
+
+function revStartRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Chrome推奨');return;}
+  const r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=true;
+  revFinal='';
+  r.onstart=()=>{
+    revRecOn=true;
+    document.getElementById('rev-mic').style.background='var(--red)';
+    document.getElementById('rev-mic-ic').textContent='⏹️';
+    document.getElementById('rev-status').textContent='録音中... タップして停止';
+  };
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)revFinal+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    const preview=(revFinal+interim).trim();
+    if(preview){
+      document.getElementById('rev-result').textContent=`認識中: "${preview}"`;
+      document.getElementById('rev-result').classList.remove('hidden');
+    }
+  };
+  r.onerror=(ev)=>{if(ev.error==='no-speech')return;revRecOn=false;revSetRecUI(false);};
+  r.onend=()=>{
+    if(revRecOn){try{r.start();}catch(e){}return;}
+    const t=revFinal.trim();
+    if(t){
+      document.getElementById('rev-result').textContent=`認識: "${t}"`;
+      document.getElementById('rev-result').classList.remove('hidden');
+      // スコアリング
+      const{score,wordResults}=calcSc(revCurrentSentence,t);
+      const c=sCol(score),bg=sBg(score);
+      const inc=wordResults.filter(w=>!w.correct);
+      document.getElementById('rev-score-area').innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:${bg};border-radius:10px;border:1.5px solid ${c};">
+          <div style="font-size:28px;font-weight:800;color:${c};min-width:44px;text-align:center;">${score}<span style="font-size:13px;">点</span></div>
+          <div>
+            <div style="font-weight:800;color:${c};">${sLbl(score)}</div>
+            <div style="font-size:11px;color:var(--t2);">${wordResults.filter(w=>w.correct).length}/${wordResults.length} 単語正解</div>
+            <div class="stars">${starsH(score)}</div>
+          </div>
+        </div>
+        ${inc.length?`<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">${inc.map(w=>`<span style="padding:3px 8px;border-radius:5px;background:var(--red-l);color:var(--red);font-size:11px;font-family:'Lora',serif;">${esc(w.word)}${w.userWord?' → '+esc(w.userWord):''}</span>`).join('')}</div>`:''}
+        ${score>=80?'<div style="margin-top:8px;font-size:12px;color:var(--green);font-weight:700;">✅ 合格！次の文に進みましょう</div>':''}
+      `;
+    }
+    revSetRecUI(false);
+  };
+  revRec=r;r.start();
+}
+
+function revStopRec(){
+  revRecOn=false;
+  try{revRec&&revRec.stop();}catch(e){}
+  revSetRecUI(false);
+}
+function revSetRecUI(a){
+  document.getElementById('rev-mic').style.background=a?'var(--red)':'var(--orange)';
+  document.getElementById('rev-mic-ic').textContent=a?'⏹️':'🎤';
+  document.getElementById('rev-status').textContent=a?'録音中...':'タップして録音';
+}
+
+function exportCorrHist(){
+  const hist=getCorrHist();
+  if(!hist.length){alert('復習データがありません');return;}
+  // JSON形式でダウンロード
+  const json=JSON.stringify(hist,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='english_corrections_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearCorrHist(){
+  if(!confirm('すべての復習データを削除しますか？'))return;
+  localStorage.removeItem(CORRECTION_HIST_KEY);
+  renderReviewMode();
+}
+// ══ 復習モード END ══
 
 // Init
 initScens();renderHist();
