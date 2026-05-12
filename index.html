@@ -275,6 +275,25 @@ a{color:var(--teal);}
 .inp-action-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid var(--border);background:var(--card);color:var(--t2);cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:4px;transition:all .15s;}
 .inp-action-btn:hover{border-color:var(--teal);color:var(--teal);}
 .inp-action-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+
+/* テンプレート・エクスポート共通 */
+.tmpl-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+.tmpl-info{flex:1;min-width:0;}
+.tmpl-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:3px;}
+.tmpl-preview{font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tmpl-actions{display:flex;gap:5px;flex-shrink:0;}
+.export-panel{background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
+.export-title{font-size:12px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.export-row{display:flex;gap:8px;flex-wrap:wrap;}
+.export-btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:5px;transition:all .15s;}
+.export-btn-json{background:var(--teal-l);color:var(--teal);border:1.5px solid var(--teal);}
+.export-btn-json:hover{background:var(--teal);color:#fff;}
+.export-btn-txt{background:var(--orange-l);color:var(--orange);border:1.5px solid var(--orange);}
+.export-btn-txt:hover{background:var(--orange);color:#fff;}
+.export-btn-csv{background:var(--green-l);color:var(--green);border:1.5px solid var(--green);}
+.export-btn-csv:hover{background:var(--green);color:#fff;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.section-ttl{font-size:14px;font-weight:800;color:var(--t1);}
 </style>
 </head>
 <body>
@@ -353,8 +372,9 @@ a{color:var(--teal);}
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <span style="font-size:13px;font-weight:700;color:#1e3a5a;">英文を入力</span>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
           <button class="btn-sm btn-ot" onclick="loadEx()">📋 例文</button>
+          <button class="btn-sm" onclick="saveTmplDialog()" style="background:var(--purple-l);border:1.5px solid var(--purple);color:var(--purple);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;" id="tmpl-save-btn" disabled>💾 テンプレ保存</button>
           <button class="btn-sm btn-rd" id="cl-btn" onclick="clrInput()" style="display:none;">✕ クリア</button>
         </div>
       </div>
@@ -364,7 +384,33 @@ a{color:var(--teal);}
         <div id="p-list"></div>
       </div>
     </div>
+
+    <!-- テンプレート一覧 -->
+    <div id="tmpl-section" style="margin-bottom:14px;display:none;">
+      <div class="section-hdr">
+        <span class="section-ttl">💾 保存済みテンプレート</span>
+        <div style="display:flex;gap:5px;">
+          <button class="btn-sm export-btn export-btn-txt" onclick="exportTemplates('txt')">📄 TXT書き出し</button>
+          <button class="btn-sm export-btn export-btn-json" onclick="exportTemplates('json')">📦 JSON書き出し</button>
+        </div>
+      </div>
+      <div id="tmpl-list"></div>
+    </div>
+
     <button class="pbtn" id="p-start" onclick="startPrac()" disabled>▶ 練習を開始する →</button>
+
+    <!-- テンプレート名入力モーダル -->
+    <div id="tmpl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;">
+      <div style="background:var(--card);border-radius:16px;padding:24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="font-size:16px;font-weight:800;margin-bottom:12px;">💾 テンプレートとして保存</div>
+        <input id="tmpl-name-input" type="text" placeholder="テンプレート名（例: 旅行英語）" onkeydown="if(event.key==='Enter')confirmSaveTmpl()"
+          style="width:100%;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--card2);font-size:13px;font-family:'Nunito',sans-serif;outline:none;margin-bottom:12px;" maxlength="40"/>
+        <div style="display:flex;gap:8px;">
+          <button onclick="closeTmplModal()" style="flex:1;height:40px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--t2);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">キャンセル</button>
+          <button onclick="confirmSaveTmpl()" style="flex:1;height:40px;border-radius:9px;background:var(--teal);color:#fff;border:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="pv-sess" class="hidden">
@@ -439,7 +485,13 @@ a{color:var(--teal);}
   </div>
 
   <div class="hist-sect" id="hist-sect">
-    <div class="hist-h">📚 学習履歴</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="hist-h" style="margin-bottom:0;">📚 学習履歴</div>
+      <div style="display:flex;gap:5px;">
+        <button class="btn-sm export-btn export-btn-txt" onclick="exportPracHist('txt')">📄 書き出し</button>
+        <button class="btn-sm export-btn export-btn-json" onclick="exportPracHist('json')">📦 JSON</button>
+      </div>
+    </div>
     <div id="hist-area"></div>
   </div>
 </div>
@@ -451,10 +503,18 @@ a{color:var(--teal);}
     <h2 class="hero-h">間違えた表現を復習しよう</h2>
     <p class="hero-p">AI補正・文法指摘された内容を繰り返し練習できます。</p>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="btn-sm btn-ot" onclick="renderReviewMode()">🔄 更新</button>
-    <button class="btn-sm" style="background:var(--green-l);border:1.5px solid var(--green);color:var(--green);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="exportCorrHist()">📥 エクスポート</button>
-    <button class="btn-sm btn-rd" onclick="clearCorrHist()">🗑 履歴を削除</button>
+  <!-- エクスポートパネル -->
+  <div class="export-panel">
+    <div class="export-title">📥 データの書き出し</div>
+    <div class="export-row">
+      <button class="export-btn export-btn-json" onclick="exportCorrHist('json')">📦 JSON形式</button>
+      <button class="export-btn export-btn-txt" onclick="exportCorrHist('txt')">📄 テキスト形式</button>
+      <button class="export-btn export-btn-csv" onclick="exportCorrHist('csv')">📊 CSV形式</button>
+    </div>
+    <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-sm btn-ot" onclick="renderReviewMode()">🔄 更新</button>
+      <button class="btn-sm btn-rd" onclick="clearCorrHist()">🗑 履歴を削除</button>
+    </div>
   </div>
   <div id="review-area"></div>
 
@@ -1307,7 +1367,7 @@ async function doTranslate(){
 function useTranslation(){const t=document.getElementById('trans-box').textContent;if(t&&curTab==='dial')useHint(t);}
 
 // Practice Mode
-function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').style.display=v.trim()?'':'none';const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
+function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').style.display=v.trim()?'':'none';const tsb=document.getElementById('tmpl-save-btn');if(tsb)tsb.disabled=!v.trim();const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
 function loadEx(){document.getElementById('p-ta').value=EXAMPLE;onPI();}
 function clrInput(){document.getElementById('p-ta').value='';onPI();}
 function toggleAuto(){isAuto=!isAuto;['auto-tog','auto-tog2'].forEach(id=>{const b=document.getElementById(id);b.className='auto-tog '+(isAuto?'on':'off');});document.querySelectorAll('#auto-lbl,#auto-lbl2').forEach(el=>el.textContent=isAuto?'ON':'OFF');}
@@ -1631,8 +1691,165 @@ function clearCorrHist(){
 }
 // ══ 復習モード END ══
 
+
+// ══ テンプレート管理 ══
+const TMPL_KEY = 'eng_practice_templates_v1';
+
+function getTmpls(){ try{ return JSON.parse(localStorage.getItem(TMPL_KEY)||'[]'); }catch{ return []; } }
+function saveTmpls(arr){ localStorage.setItem(TMPL_KEY, JSON.stringify(arr)); }
+
+function saveTmplDialog(){
+  const v = document.getElementById('p-ta').value.trim();
+  if(!v){ alert('英文を入力してください'); return; }
+  document.getElementById('tmpl-name-input').value = '';
+  const modal = document.getElementById('tmpl-modal');
+  modal.style.display = 'flex';
+  setTimeout(()=>document.getElementById('tmpl-name-input').focus(), 100);
+}
+function closeTmplModal(){
+  document.getElementById('tmpl-modal').style.display = 'none';
+}
+function confirmSaveTmpl(){
+  const name = document.getElementById('tmpl-name-input').value.trim() || ('テンプレート ' + new Date().toLocaleDateString('ja-JP'));
+  const sents = document.getElementById('p-ta').value.trim();
+  if(!sents){ alert('英文が入力されていません'); return; }
+  const tmpls = getTmpls();
+  tmpls.unshift({ id:'t_'+Date.now(), name, sentences:sents, date:new Date().toISOString(), count: sents.split('\n').filter(l=>l.trim()).length });
+  saveTmpls(tmpls);
+  closeTmplModal();
+  renderTmplList();
+  // 保存完了フィードバック
+  const btn = document.getElementById('tmpl-save-btn');
+  const orig = btn.textContent;
+  btn.textContent = '✅ 保存しました';
+  setTimeout(()=>{ btn.textContent = orig; }, 1500);
+}
+
+function renderTmplList(){
+  const tmpls = getTmpls();
+  const sec = document.getElementById('tmpl-section');
+  const list = document.getElementById('tmpl-list');
+  if(!tmpls.length){ sec.style.display='none'; return; }
+  sec.style.display = '';
+  list.innerHTML = tmpls.map(t => `
+    <div class="tmpl-card">
+      <div class="tmpl-info">
+        <div class="tmpl-name">${esc(t.name)} <span style="font-size:10px;color:var(--t3);">${t.count}文 · ${fmtD(t.date)}</span></div>
+        <div class="tmpl-preview">${esc(t.sentences.split('\n').filter(l=>l.trim())[0]||'')}</div>
+      </div>
+      <div class="tmpl-actions">
+        <button class="btn-sm btn-ot" onclick="loadTmpl('${encodeURIComponent(t.id)}')" title="読み込む">📂 読込</button>
+        <button class="btn-sm btn-rd" onclick="deleteTmpl('${encodeURIComponent(t.id)}')" title="削除">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadTmpl(encId){
+  const id = decodeURIComponent(encId);
+  const t = getTmpls().find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('p-ta').value = t.sentences;
+  onPI();
+  document.getElementById('p-ta').scrollIntoView({behavior:'smooth'});
+}
+
+function deleteTmpl(encId){
+  const id = decodeURIComponent(encId);
+  if(!confirm('このテンプレートを削除しますか？')) return;
+  saveTmpls(getTmpls().filter(t=>t.id!==id));
+  renderTmplList();
+}
+
+function exportTemplates(fmt){
+  const tmpls = getTmpls();
+  if(!tmpls.length){ alert('テンプレートがありません'); return; }
+  let content='', ext='', mime='';
+  const date = new Date().toISOString().slice(0,10);
+  if(fmt==='json'){
+    content = JSON.stringify(tmpls, null, 2);
+    ext='json'; mime='application/json';
+  } else {
+    content = tmpls.map(t=>`=== ${t.name} (${t.count}文) ===\n${t.sentences}\n`).join('\n');
+    ext='txt'; mime='text/plain';
+  }
+  dlFile(content, `practice_templates_${date}.${ext}`, mime);
+}
+
+// ══ エクスポート共通 ══
+function dlFile(content, filename, mime){
+  const blob = new Blob([content], {type: mime+';charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ══ 修正履歴エクスポート（JSON/TXT/CSV）══
+function exportCorrHist(fmt='json'){
+  const hist = getCorrHist();
+  if(!hist.length){ alert('修正履歴がありません\n\nAIサポートモードをONにして英会話練習すると記録されます'); return; }
+  const date = new Date().toISOString().slice(0,10);
+  let content='', ext='', mime='';
+  if(fmt==='json'){
+    content = JSON.stringify(hist, null, 2);
+    ext='json'; mime='application/json';
+  } else if(fmt==='csv'){
+    const header = '日時,シナリオ,あなたの発言,AI補正後,文法修正,指摘内容\n';
+    const rows = hist.map(h=>[
+      h.date, h.scenario||'',
+      '"'+( h.original||'').replace(/"/g,'""')+'"',
+      '"'+(h.corrected||'').replace(/"/g,'""')+'"',
+      '"'+(h.grammarFix||'').replace(/"/g,'""')+'"',
+      '"'+(h.issues||[]).join(' / ').replace(/"/g,'""')+'"'
+    ].join(',')).join('\n');
+    content = '\uFEFF' + header + rows; // BOM付きUTF-8（Excelで開ける）
+    ext='csv'; mime='text/csv';
+  } else {
+    // テキスト形式（読みやすい）
+    content = hist.map((h,i)=>{
+      const lines = [
+        `【${i+1}】 ${fmtD(h.date)} — ${h.scenario||'不明'}`,
+        `  あなたの発言: ${h.original||''}`,
+        h.corrected&&h.corrected!==h.original ? `  AI補正:      ${h.corrected}` : null,
+        h.grammarFix ? `  正しい英文:   ${h.grammarFix}` : null,
+        (h.issues||[]).length ? `  指摘:        ${h.issues.join(' / ')}` : null,
+        h.context ? `  前後の文脈:   ${h.context}` : null,
+        '─'.repeat(50)
+      ].filter(Boolean).join('\n');
+      return lines;
+    }).join('\n');
+    ext='txt'; mime='text/plain';
+  }
+  dlFile(content, `english_corrections_${date}.${ext}`, mime);
+}
+
+// ══ 発音練習履歴エクスポート ══
+function exportPracHist(fmt='txt'){
+  const hist = getHist();
+  if(!hist.length){ alert('学習履歴がありません'); return; }
+  const date = new Date().toISOString().slice(0,10);
+  let content='', ext='', mime='';
+  if(fmt==='json'){
+    content = JSON.stringify(hist, null, 2);
+    ext='json'; mime='application/json';
+  } else {
+    content = hist.map((s,idx)=>{
+      const lines = [
+        `【セッション ${idx+1}】 ${fmtD(s.date)}`,
+        `  総合スコア: ${s.averageScore}点`,
+        ...s.sentences.map((sent,i)=>`  ${i+1}. ${sent}  → ${s.scores[i]}点`),
+        '─'.repeat(50)
+      ].join('\n');
+      return lines;
+    }).join('\n');
+    ext='txt'; mime='text/plain';
+  }
+  dlFile(content, `practice_history_${date}.${ext}`, mime);
+}
+// ══ テンプレート END ══
+
 // Init
-initScens();renderHist();
+initScens();renderHist();renderTmplList();
 if(groqKey)document.getElementById('key-input').value=groqKey;
 </script>
 </body>
