@@ -375,7 +375,7 @@ a{color:var(--teal);}
         <div style="display:flex;gap:5px;flex-wrap:wrap;">
           <button class="btn-sm btn-ot" onclick="loadEx()">📋 例文</button>
           <button class="btn-sm" onclick="saveTmplDialog()" style="background:var(--purple-l);border:1.5px solid var(--purple);color:var(--purple);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;" id="tmpl-save-btn" disabled>💾 テンプレ保存</button>
-          <button class="btn-sm btn-rd" id="cl-btn" onclick="clrInput()" style="display:none;">✕ クリア</button>
+          <button class="btn-sm btn-rd" id="cl-btn" onclick="clrInput()" style="display:none;align-items:center;gap:4px;">✕ クリア</button>
         </div>
       </div>
       <textarea class="pta" id="p-ta" oninput="onPI()" placeholder="例:&#10;The weather is beautiful today.&#10;I would like to order a coffee, please.&#10;Could you repeat that more slowly?"></textarea>
@@ -446,7 +446,7 @@ a{color:var(--teal);}
           <div class="wb" id="wb1"></div><div class="wb" id="wb2"></div><div class="wb" id="wb3"></div>
           <div class="wb" id="wb4"></div><div class="wb" id="wb5"></div><div class="wb" id="wb6"></div><div class="wb" id="wb7"></div>
         </div>
-        <div class="mic-ring" id="mic-ring" onclick="stopRec()">
+        <div class="mic-ring" id="mic-ring" onclick="toggleRec()">
           <div class="pr hidden" style="background:rgba(192,57,43,0.25);" id="mpr1"></div>
           <div class="pr d hidden" style="background:rgba(192,57,43,0.18);" id="mpr2"></div>
           <span style="font-size:24px;z-index:1;" id="mic-ic">🎤</span>
@@ -1367,7 +1367,7 @@ async function doTranslate(){
 function useTranslation(){const t=document.getElementById('trans-box').textContent;if(t&&curTab==='dial')useHint(t);}
 
 // Practice Mode
-function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').style.display=v.trim()?'':'none';const tsb=document.getElementById('tmpl-save-btn');if(tsb)tsb.disabled=!v.trim();const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
+function onPI(){const v=document.getElementById('p-ta').value;const s=v.split('\n').map(l=>l.trim()).filter(Boolean);document.getElementById('p-start').disabled=!s.length;document.getElementById('cl-btn').style.display=v.trim()?'flex':'none';const tsb=document.getElementById('tmpl-save-btn');if(tsb)tsb.disabled=!v.trim();const pr=document.getElementById('p-prev');if(s.length){pr.classList.remove('hidden');document.getElementById('p-cnt').textContent=`📝 ${s.length}文`;document.getElementById('p-list').innerHTML=s.slice(0,3).map((x,i)=>`<div style="font-size:11px;color:var(--t2);font-family:'Lora',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${i+1}. ${esc(x)}</div>`).join('')+(s.length>3?`<div style="font-size:10px;color:var(--t3);">... 他${s.length-3}文</div>`:'');}else pr.classList.add('hidden');}
 function loadEx(){document.getElementById('p-ta').value=EXAMPLE;onPI();}
 function clrInput(){document.getElementById('p-ta').value='';onPI();}
 function toggleAuto(){isAuto=!isAuto;['auto-tog','auto-tog2'].forEach(id=>{const b=document.getElementById(id);b.className='auto-tog '+(isAuto?'on':'off');});document.querySelectorAll('#auto-lbl,#auto-lbl2').forEach(el=>el.textContent=isAuto?'ON':'OFF');}
@@ -1386,21 +1386,120 @@ function setPStep(s){
   document.getElementById('review-ui').classList[s==='review'?'remove':'add']('hidden');
   document.getElementById('act-row').classList[s==='review'&&!isAuto?'remove':'add']('hidden');
   if(s==='listen')setTimeout(doTTS,600);
-  if(s==='speak'&&!pPlaying)setTimeout(startRec,300);
+  if(s==='speak'&&!pPlaying){
+    // 録音状態を完全リセットしてから開始
+    pRec=false; pFinal='';
+    if(pRecRef){ try{pRecRef.stop();pRecRef.abort();}catch(e){} pRecRef=null; }
+    setRecUI(false);
+    document.getElementById('usr-txt').classList.add('hidden');
+    document.getElementById('usr-txt').textContent='';
+    setTimeout(startRec,500);
+  }
   if(s==='review'){renderRev();if(isAuto){document.getElementById('auto-notice').classList.remove('hidden');pTimer=setTimeout(nextS,2400);}else document.getElementById('act-row').classList.remove('hidden');}
   const nb=document.getElementById('nxt-btn');if(nb)nb.textContent=pIdx<pSents.length-1?'次の文へ →':'結果を見る 🏆';
 }
 
 function doTTS(){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(pSents[pIdx]);u.lang='en-US';u.rate=ttsSpeed;u.pitch=1;const vs=window.speechSynthesis.getVoices();const v=vs.find(v=>v.lang.startsWith('en')&&(v.name.includes('Google')||v.name.includes('Natural')||v.name.includes('Premium')))||vs.find(v=>v.lang.startsWith('en'));if(v)u.voice=v;u.onstart=()=>{pPlaying=true;document.getElementById('tts-lbl').textContent='発音中...';document.getElementById('replay-btn').disabled=true;document.getElementById('pr1').classList.remove('hidden');document.getElementById('pr2').classList.remove('hidden');};u.onend=()=>{pPlaying=false;document.getElementById('tts-lbl').textContent='もう一度聴く';document.getElementById('replay-btn').disabled=false;document.getElementById('pr1').classList.add('hidden');document.getElementById('pr2').classList.add('hidden');if(pStep==='listen')setTimeout(()=>setPStep('speak'),400);};u.onerror=()=>{pPlaying=false;};window.speechSynthesis.speak(u);}
 
-function startRec(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Chrome推奨');return;}const r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;pFinal='';
-  r.onstart=()=>{pRec=true;document.getElementById('mic-ring').classList.add('rec');document.getElementById('mic-ic').textContent='⏹️';document.getElementById('spk-lbl').textContent='録音中... タップして停止';document.getElementById('mpr1').classList.remove('hidden');document.getElementById('mpr2').classList.remove('hidden');setWave(true);};
-  r.onresult=(e)=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)pFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}const prev=(pFinal+interim).trim();if(prev){document.getElementById('usr-txt').textContent=`認識中: "${prev}"`;document.getElementById('usr-txt').classList.remove('hidden');}};
-  r.onerror=(ev)=>{if(ev.error==='no-speech')return;pRec=false;setRecUI(false);};
-  r.onend=()=>{if(pRec){try{r.start();}catch(e){}return;}const t=pFinal.trim();if(t){document.getElementById('usr-txt').textContent=`認識: "${t}"`;document.getElementById('usr-txt').classList.remove('hidden');const{score,wordResults}=calcSc(pSents[pIdx],t);pCur={sentence:pSents[pIdx],userText:t,score,wordResults};pRes.push(pCur);document.getElementById('s-score').textContent=Math.round(pRes.reduce((a,b)=>a+b.score,0)/pRes.length)+'点';setPStep('review');}setRecUI(false);};
-  pRecRef=r;r.start();}
+function toggleRec(){
+  if(pRec){ stopRec(); }
+  else { startRec(); }
+}
 
-function stopRec(){if(!pRec)return;pRec=false;try{pRecRef&&pRecRef.stop();}catch(e){}setRecUI(false);}
+function startRec(){
+  // 既存の録音があれば確実にクリア
+  if(pRecRef){ try{ pRecRef.stop(); pRecRef.abort(); }catch(e){} pRecRef=null; }
+  pRec=false; pFinal='';
+  
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('音声認識はChromeで使えます'); return; }
+  
+  const r=new SR();
+  r.lang='en-US';
+  r.continuous=true;
+  r.interimResults=true;
+  r.maxAlternatives=1;
+  
+  // 無音タイマー: 2秒話さなかったら自動送信
+  let silenceTimer=null;
+  let hasSpeech=false;
+  
+  function resetSilenceTimer(){
+    clearTimeout(silenceTimer);
+    // 何か話した後、2秒無音で自動停止
+    if(hasSpeech){
+      silenceTimer=setTimeout(()=>{
+        if(pRec){ stopRec(); }
+      }, 2000);
+    }
+  }
+  
+  r.onstart=()=>{
+    pRec=true; hasSpeech=false;
+    setRecUI(true);
+    document.getElementById('spk-lbl').textContent='録音中... 話し終えると自動で次へ';
+  };
+  
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){ pFinal+=e.results[i][0].transcript+' '; hasSpeech=true; }
+      else interim+=e.results[i][0].transcript;
+    }
+    const prev=(pFinal+interim).trim();
+    if(prev){
+      document.getElementById('usr-txt').textContent='認識中: "'+prev+'"';
+      document.getElementById('usr-txt').classList.remove('hidden');
+    }
+    resetSilenceTimer();
+  };
+  
+  r.onspeechend=()=>{ resetSilenceTimer(); };
+  
+  r.onerror=(ev)=>{
+    clearTimeout(silenceTimer);
+    if(ev.error==='no-speech'){ return; } // 無音は無視
+    if(ev.error==='aborted'){ pRec=false; setRecUI(false); return; }
+    pRec=false; setRecUI(false);
+  };
+  
+  r.onend=()=>{
+    clearTimeout(silenceTimer);
+    // pRecがtrueなら再起動（continuousが切れた場合）
+    if(pRec && !hasSpeech){
+      try{ r.start(); return; }catch(e){}
+    }
+    pRec=false;
+    setRecUI(false);
+    const t=pFinal.trim();
+    if(t){
+      document.getElementById('usr-txt').textContent='認識: "'+t+'"';
+      document.getElementById('usr-txt').classList.remove('hidden');
+      const{score,wordResults}=calcSc(pSents[pIdx],t);
+      pCur={sentence:pSents[pIdx],userText:t,score,wordResults};
+      pRes.push(pCur);
+      document.getElementById('s-score').textContent=Math.round(pRes.reduce((a,b)=>a+b.score,0)/pRes.length)+'点';
+      setPStep('review');
+    } else {
+      // 何も認識できなかった → 再度タップを促す
+      document.getElementById('spk-lbl').textContent='もう一度タップして話してください';
+    }
+  };
+  
+  pRecRef=r;
+  try{ r.start(); }
+  catch(e){
+    pRec=false; setRecUI(false);
+    alert('マイクを起動できませんでした。ページを再読み込みして再試行してください。');
+  }
+}
+
+function stopRec(){
+  if(!pRec && !pRecRef) return;
+  pRec=false;
+  try{ pRecRef&&pRecRef.stop(); }catch(e){}
+  setRecUI(false);
+}
 function setRecUI(a){document.getElementById('mic-ring').classList[a?'add':'remove']('rec');document.getElementById('mic-ic').textContent=a?'⏹️':'🎤';document.getElementById('spk-lbl').textContent=a?'録音中... タップして停止':'タップして録音開始';document.getElementById('mpr1').classList[a?'remove':'add']('hidden');document.getElementById('mpr2').classList[a?'remove':'add']('hidden');setWave(a);}
 function setWave(a){for(let i=1;i<=7;i++){const b=document.getElementById('wb'+i);if(a)b.classList.add('a');else{b.classList.remove('a');b.style.height='3px';}}}
 
@@ -1512,13 +1611,31 @@ async function renderRev(){
     ${aiMode==='off'&&inc.length?`<div class="err-box"><div style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red);">改善が必要な単語</div><div class="err-chips">${inc.map(w=>`<div class="err-chip">${esc(w.word)}${w.userWord?`<span style="color:var(--red)"> → ${esc(w.userWord)}</span>`:''}</div>`).join('')}</div></div>`:''}`;
 }
 
-function retryP(){clearTimeout(pTimer);pRes.pop();pCur=null;pFinal='';setPStep('listen');}
+function retryP(){
+  clearTimeout(pTimer);
+  pRec=false; pFinal='';
+  try{pRecRef&&pRecRef.stop();}catch(e){}
+  pRecRef=null;
+  setRecUI(false);
+  pRes.pop(); pCur=null;
+  setPStep('listen');
+}
 function nextS(){clearTimeout(pTimer);document.getElementById('auto-notice').classList.add('hidden');if(pIdx<pSents.length-1){pIdx++;pCur=null;pFinal='';updProg();setPStep('listen');}else{if(!pSaved){pSaved=true;saveSess(pSents,pRes.map(r=>r.score));renderHist();}showFin();}}
 
 function showFin(){const scores=pRes.map(r=>r.score);const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;document.getElementById('pv-sess').classList.add('hidden');document.getElementById('pv-fin').classList.remove('hidden');document.getElementById('fin-sub').textContent=`${pRes.length}文の練習が完了しました`;document.getElementById('avg-n').innerHTML=`${avg}<span style="font-size:15px;">点</span>`;document.getElementById('fin-stars').innerHTML=starsH(avg,18);document.getElementById('fin-list').innerHTML=pRes.map(r=>{const c=sCol(r.score),bg=sBg(r.score);return`<div class="res-row"><div class="res-sc" style="background:${bg};color:${c};">${r.score}</div><span style="font-family:'Lora',serif;font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.sentence)}</span></div>`;}).join('');}
 
 function endSess(){if(!confirm('練習を終了しますか？'))return;backPI();}
-function backPI(){window.speechSynthesis&&window.speechSynthesis.cancel();try{pRecRef&&pRecRef.abort();}catch(e){}['pv-sess','pv-fin'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById('pv-input').classList.remove('hidden');renderHist();}
+function backPI(){
+  window.speechSynthesis&&window.speechSynthesis.cancel();
+  pRec=false;
+  try{pRecRef&&pRecRef.stop();}catch(e){}
+  try{pRecRef&&pRecRef.abort();}catch(e){}
+  pRecRef=null; pFinal='';
+  setRecUI(false);
+  ['pv-sess','pv-fin'].forEach(x=>document.getElementById(x).classList.add('hidden'));
+  document.getElementById('pv-input').classList.remove('hidden');
+  renderHist();
+}
 function restartP(){pIdx=0;pRes=[];pCur=null;pSaved=false;pFinal='';document.getElementById('pv-fin').classList.add('hidden');document.getElementById('pv-sess').classList.remove('hidden');setPStep('listen');updProg();}
 
 
