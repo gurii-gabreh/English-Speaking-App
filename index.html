@@ -294,6 +294,19 @@ a{color:var(--teal);}
 .export-btn-csv:hover{background:var(--green);color:#fff;}
 .section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .section-ttl{font-size:14px;font-weight:800;color:var(--t1);}
+
+/* マイク選択 */
+.mic-sel-wrap{display:flex;align-items:center;gap:5px;}
+.mic-sel-lbl{font-size:11px;font-weight:700;color:var(--t2);white-space:nowrap;}
+.mic-select{padding:4px 8px;border-radius:7px;border:1.5px solid var(--border);background:var(--card);
+  font-size:11px;font-weight:600;color:var(--t1);font-family:'Nunito',sans-serif;cursor:pointer;
+  outline:none;max-width:160px;transition:border-color .15s;}
+.mic-select:focus{border-color:var(--teal);}
+.mic-select:hover{border-color:var(--teal);}
+.mic-reload-btn{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);
+  background:var(--card);color:var(--t2);font-size:13px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.mic-reload-btn:hover{border-color:var(--teal);color:var(--teal);}
 </style>
 </head>
 <body>
@@ -313,6 +326,14 @@ a{color:var(--teal);}
       <button class="ai-mode-btn on" id="ai-mode-off" onclick="setAiMode('off')" title="通常採点モード">📝 通常</button>
       <button class="ai-mode-btn" id="ai-mode-pron" onclick="setAiMode('pron')" title="単語ごとの発音チェック">🔤 発音チェック</button>
       <button class="ai-mode-btn" id="ai-mode-nuance" onclick="setAiMode('nuance')" title="ニュアンス・意味で判断（多少間違ってもOK）">🧠 ニュアンス判定</button>
+    </div>
+    <!-- マイク選択 -->
+    <div class="mic-sel-wrap">
+      <span class="mic-sel-lbl">🎤</span>
+      <select class="mic-select" id="mic-select" onchange="onMicChange()" title="使用するマイクを選択">
+        <option value="">デフォルト</option>
+      </select>
+      <button class="mic-reload-btn" onclick="loadMicDevices()" title="マイク一覧を更新">↻</button>
     </div>
     <div class="speed-group">
       <span class="speed-lbl">🔊</span>
@@ -663,6 +684,8 @@ const STORAGE_KEY='eng_v5';
 const API_KEY_STORE='eng_groq_key';
 
 let groqKey=localStorage.getItem(API_KEY_STORE)||'';
+let selectedMicId=''; // 選択中のマイクデバイスID
+const MIC_PREF_KEY='eng_mic_pref';
 const msgStore=new Map(); // id→text の安全なストレージ
 let ttsSpeed=0.75,isAuto=false,aiMode='off',curTab='prac'; // aiMode: 'off'|'pron'|'nuance'
 let pSents=[],pIdx=0,pStep='listen',pRes=[],pCur=null;
@@ -1267,8 +1290,10 @@ function updateVoiceDisp(text,state){
 // Chat Mic — continuous, readonly
 function toggleCMic(){cMicOn?stopCMic(true):startCMic();}
 
-function startCMic(){
+async function startCMic(){
   if(cMicOn||dLoading)return;
+  // 選択したマイクをアクティブ化
+  await activateMicDevice();
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Chrome推奨');return;}
   const r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
   let final='';
@@ -1333,6 +1358,8 @@ function toggleJpMic(){
     document.getElementById('jp-mic-btn').textContent='🎤 音声で入力（日本語）';
     document.getElementById('jp-stop-btn').style.display='none';
     return;}
+  // 選択したマイクをアクティブ化（非同期だが待たずに続行）
+  activateMicDevice();
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Chrome推奨');return;}
   const r=new SR();r.lang='ja-JP';r.continuous=true;r.interimResults=true;let finalJp='';
   r.onstart=()=>{
@@ -1406,10 +1433,13 @@ function toggleRec(){
   else { startRec(); }
 }
 
-function startRec(){
+async function startRec(){
   // 既存の録音があれば確実にクリア
   if(pRecRef){ try{ pRecRef.stop(); pRecRef.abort(); }catch(e){} pRecRef=null; }
   pRec=false; pFinal='';
+  
+  // 選択したマイクをアクティブ化
+  await activateMicDevice();
   
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ alert('音声認識はChromeで使えます'); return; }
@@ -1724,7 +1754,8 @@ function revPlayTTS(){
 
 function revToggleRec(){revRecOn?revStopRec():revStartRec();}
 
-function revStartRec(){
+async function revStartRec(){
+  await activateMicDevice();
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Chrome推奨');return;}
   const r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=true;
@@ -1965,8 +1996,70 @@ function exportPracHist(fmt='txt'){
 }
 // ══ テンプレート END ══
 
+
+// ══ マイク選択 ══
+async function loadMicDevices(){
+  const sel=document.getElementById('mic-select');
+  try{
+    // まずマイク権限を取得（これをしないと deviceId が空になる）
+    await navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop()));
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    const mics=devices.filter(d=>d.kind==='audioinput');
+    // 現在の選択を保持
+    const prev=sel.value;
+    sel.innerHTML='<option value="">🎤 デフォルト</option>';
+    mics.forEach(mic=>{
+      const opt=document.createElement('option');
+      opt.value=mic.deviceId;
+      // ラベルが空の場合は番号で表示
+      opt.textContent=mic.label||('マイク '+(sel.options.length));
+      sel.appendChild(opt);
+    });
+    // 保存済みの設定を復元
+    const saved=localStorage.getItem(MIC_PREF_KEY)||'';
+    if(saved&&[...sel.options].some(o=>o.value===saved)){
+      sel.value=saved;
+      selectedMicId=saved;
+    } else if(prev&&[...sel.options].some(o=>o.value===prev)){
+      sel.value=prev;
+    }
+    if(mics.length===0){
+      sel.innerHTML='<option value="">（マイクが見つかりません）</option>';
+    }
+  }catch(e){
+    console.warn('マイク一覧の取得に失敗:', e);
+    sel.innerHTML='<option value="">デフォルト（権限なし）</option>';
+  }
+}
+
+function onMicChange(){
+  const sel=document.getElementById('mic-select');
+  selectedMicId=sel.value;
+  localStorage.setItem(MIC_PREF_KEY, selectedMicId);
+}
+
+// SpeechRecognition に deviceId を適用するヘルパー
+// Web Speech API は直接 deviceId を指定できないため、
+// getUserMedia で指定デバイスをアクティブにしてから起動する方式を使用
+async function activateMicDevice(){
+  if(!selectedMicId) return; // デフォルトならそのままでOK
+  try{
+    // 選択したデバイスをアクティブにする（これでブラウザが優先使用する）
+    const stream=await navigator.mediaDevices.getUserMedia({
+      audio:{ deviceId:{ exact:selectedMicId } }
+    });
+    // すぐ停止（アクティブにするだけでいい）
+    stream.getTracks().forEach(t=>t.stop());
+  }catch(e){
+    console.warn('指定マイクのアクティブ化に失敗（デフォルトを使用）:', e);
+  }
+}
+// ══ マイク選択 END ══
+
 // Init
 initScens();renderHist();renderTmplList();
+// マイク一覧を初期ロード
+loadMicDevices();
 if(groqKey)document.getElementById('key-input').value=groqKey;
 </script>
 </body>
