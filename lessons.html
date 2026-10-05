@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レッスン記録 — English Speaking Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#fdf8f0;--card:#fffefb;--card2:#f7f2e8;
+  --teal:#1b5080;--teal-l:rgba(27,80,128,0.10);--teal-m:#3d6b96;
+  --orange:#e8651a;--orange-l:rgba(232,101,26,0.12);
+  --green:#217a50;--green-l:rgba(33,122,80,0.10);
+  --red:#c0392b;--red-l:rgba(192,57,43,0.10);
+  --border:#e2d9cc;--t1:#1a2a3a;--t2:#5a6a7a;--t3:#8a9aaa;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
+.wrap{max-width:720px;margin:0 auto;padding:28px 18px 60px;}
+.back{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;margin-bottom:18px;}
+.back:hover{text-decoration:underline;}
+h1{font-family:'Lora',serif;font-size:22px;color:var(--teal);margin-bottom:6px;}
+.lead{font-size:13px;color:var(--t2);line-height:1.8;margin-bottom:24px;}
+#status{font-size:12.5px;color:var(--t2);margin-bottom:16px;}
+#empty{font-size:13px;color:var(--t2);background:var(--card);border:1.5px dashed var(--border);border-radius:10px;padding:18px;text-align:center;display:none;}
+.lesson-list{display:flex;flex-direction:column;gap:14px;}
+.lesson-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;}
+.lesson-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.lesson-date{font-family:'Lora',serif;font-size:15px;font-weight:700;color:var(--teal);}
+.lesson-course{font-size:11.5px;font-weight:700;color:var(--teal);background:var(--teal-l);padding:3px 10px;border-radius:10px;}
+.lesson-section{margin-top:10px;}
+.lesson-section-title{font-size:10.5px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.expr-row{display:flex;gap:8px;font-size:12.5px;line-height:1.7;padding:3px 0;}
+.expr-row .en{font-family:'Lora',serif;color:var(--green);font-weight:600;}
+.expr-row .ja{color:var(--t2);}
+.corr-row{font-size:12.5px;line-height:1.8;color:var(--t1);}
+.corr-row .said{color:var(--red);}
+.homework{font-size:12.5px;color:var(--t1);background:var(--orange-l);border-radius:8px;padding:8px 10px;line-height:1.7;}
+.raw-toggle{font-size:11px;color:var(--t3);cursor:pointer;margin-top:10px;text-decoration:underline;}
+.raw-body{display:none;white-space:pre-wrap;font-size:11.5px;color:var(--t2);background:var(--card2);border-radius:8px;padding:10px;margin-top:6px;line-height:1.7;}
+.raw-body.show{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="chatgpt.html">← ChatGPTで英会話レッスンへ戻る</a>
+  <h1>📖 レッスン記録</h1>
+  <p class="lead">ChatGPTでのレッスン終了後に出力したレポートを、Claude Codeが読み取って記録した一覧です(このページ自体は閲覧専用で、保存・編集はできません)。</p>
+  <div id="status">読み込み中…</div>
+  <div id="empty">まだ記録がありません。レッスン後に「レポートを出して」と伝え、出力内容をClaude Codeへ貼り付けて記録を依頼してください。</div>
+  <div class="lesson-list" id="lesson-list"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  const DATA_URL = "data/lessons.json";
+  const statusEl = document.getElementById("status");
+  const emptyEl = document.getElementById("empty");
+  const listEl = document.getElementById("lesson-list");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function renderEntry(entry) {
+    const card = document.createElement("div");
+    card.className = "lesson-card";
+
+    const exprHtml = (entry.expressions || []).map((e) =>
+      `<div class="expr-row"><span class="en">${esc(e.en)}</span><span class="ja">— ${esc(e.ja)}</span></div>`
+    ).join("") || `<div class="expr-row ja">なし</div>`;
+
+    const corrHtml = (entry.corrections || []).map((c) =>
+      `<div class="corr-row"><span class="said">${esc(c.said)}</span> → ${esc(c.fixed)}</div>`
+    ).join("") || `<div class="corr-row">なし</div>`;
+
+    card.innerHTML = `
+      <div class="lesson-head">
+        <span class="lesson-date">${esc(entry.date || "(日付不明)")}</span>
+        ${entry.courseMaterial ? `<span class="lesson-course">${esc(entry.courseMaterial)}</span>` : ""}
+      </div>
+      <div class="lesson-section">
+        <div class="lesson-section-title">今日使えるようになった表現</div>
+        ${exprHtml}
+      </div>
+      <div class="lesson-section">
+        <div class="lesson-section-title">訂正された文</div>
+        ${corrHtml}
+      </div>
+      <div class="lesson-section">
+        <div class="lesson-section-title">次回までの宿題</div>
+        <div class="homework">${esc(entry.homework || "なし")}</div>
+      </div>
+      ${entry.rawReport ? `<div class="raw-toggle">元のレポート全文を表示/折りたたみ</div><div class="raw-body">${esc(entry.rawReport)}</div>` : ""}
+    `;
+
+    const toggle = card.querySelector(".raw-toggle");
+    const rawBody = card.querySelector(".raw-body");
+    if (toggle && rawBody) {
+      toggle.addEventListener("click", () => rawBody.classList.toggle("show"));
+    }
+    return card;
+  }
+
+  fetch(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      const entries = (data.entries || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      statusEl.style.display = "none";
+      if (entries.length === 0) {
+        emptyEl.style.display = "block";
+        return;
+      }
+      entries.forEach((entry) => listEl.appendChild(renderEntry(entry)));
+    })
+    .catch((err) => {
+      statusEl.textContent = "読み込みに失敗しました: " + err.message;
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "description": "ChatGPTでの英会話レッスン(chatgpt.html参照)終了後にChatGPTが出力するレッスンレポートを、Claude Codeが読み取って記録するJSON。ユーザーがレポート+縦線区切りの1行をChatGPTからコピーしてClaude Codeへ貼り付け、Claudeがこのファイルへ直接commitする(スプレッドシートへの貼り付けは廃止、2026-10-05)。",
+  "entrySchema": {
+    "id": "一意なID(記録時のUNIXタイムスタンプ等)",
+    "date": "レッスンレポートの【日付】(YYYY-MM-DD)",
+    "courseMaterial": "縦線区切りの1行から取得したコース・教材(例: 日常会話初級 レッスン1)",
+    "expressions": "[{en, ja}, ...] 今日使えるようになった表現(最大5件)",
+    "corrections": "[{said, fixed}, ...] 訂正された文(最大5件)",
+    "homework": "次回までの宿題(1件、無ければ「なし」)",
+    "rawReport": "ChatGPTが出力したレポート本文(整形前の原文)",
+    "recordedAt": "Claude Codeが記録した日時(ISO8601)"
+  },
+  "entries": []
+}
