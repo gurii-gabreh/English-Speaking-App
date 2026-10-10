@@ -11,5 +11,46 @@
     "rawReport": "ChatGPTが出力したレポート本文(整形前の原文)",
     "recordedAt": "Claude Codeが記録した日時(ISO8601)"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "lesson-2026-10-10-01",
+      "date": "2026-10-10",
+      "courseMaterial": "スキマ英会話 E-1(Lesson 1) Morning Routine(朝のルーティン)",
+      "expressions": [
+        {
+          "en": "I usually get up around six.",
+          "ja": "私は普段、6時ごろに起きます。"
+        },
+        {
+          "en": "What time do you usually get to work?",
+          "ja": "普段、何時に職場に着きますか？"
+        },
+        {
+          "en": "I usually get to work around seven.",
+          "ja": "私は普段、7時ごろに職場に着きます。"
+        },
+        {
+          "en": "I eat breakfast and go for a walk.",
+          "ja": "私は朝食を食べて、散歩に行きます。"
+        },
+        {
+          "en": "I eat a Japanese breakfast, then I go to work.",
+          "ja": "私は和食の朝食を食べて、それから仕事に行きます。"
+        }
+      ],
+      "corrections": [
+        {
+          "said": "I usually eat a breakfast.",
+          "fixed": "I usually eat breakfast."
+        },
+        {
+          "said": "I start to work around nine.",
+          "fixed": "I start work around nine."
+        }
+      ],
+      "homework": "then と when を使って、自分の朝の行動を3文で説明する。",
+      "rawReport": "英会話レッスンレポート\n日付：2026年10月10日（土）\n時間：20:07〜20:27頃\nコース：スキマ英会話\nレッスン番号：E-1（Lesson 1）\nテーマ：Morning Routine（朝のルーティン）\n1. 今日のレッスンで練習した英文\n① 朝起きる\nI usually get up around six.\n私は普段、6時ごろに起きます。\nI usually get up at seven o'clock.\n私は普段、7時に起きます。\n② 仕事に行く・仕事を始める\nWhat time do you usually get to work?\n普段、何時に職場に着きますか？\nI usually get to the office by nine.\n私は普段、9時までにオフィスに着きます。\nI usually get to work around seven.\n私は普段、7時ごろに職場に着きます。\nI usually start work around seven.\n私は普段、7時ごろに仕事を始めます。\nI start work around nine.\n私は9時ごろに仕事を始めます。\nI usually finish work around seven.\n私は普段、7時ごろに仕事を終えます。\n③ 朝食・散歩について話す\nWhat do you usually do after you wake up?\n目が覚めたあと、普段何をしますか？\nI eat breakfast and go for a walk.\n私は朝食を食べて、散歩に行きます。\nWhat do you usually eat for breakfast?\n普段、朝食には何を食べますか？\nI usually eat a Japanese breakfast.\n私は普段、和食の朝食を食べます。\n④ 行動を順番に説明する\nThen I go to work.\nそれから仕事に行きます。\nI eat a Japanese breakfast, then I go to work.\n私は和食の朝食を食べて、それから仕事に行きます。\nWhen I finish breakfast, I go to work.\n朝食を食べ終えたら、仕事に行きます。\nI go to work when I finish breakfast.\n朝食を食べ終えたら、仕事に行きます。\n2. 今日質問した内容と解説\n質問① get to work と start work の違い\nget to work = 職場に着く\nstart work = 仕事を始める\nfinish work = 仕事を終える\n例えば、\nI get to work at nine.（9時に職場に着く）\nI start work at nine.（9時に仕事を始める）\nI finish work at seven.（7時に仕事を終える）\nポイント： get to は「到着する」、start は「始める」という違いがあります。\n質問② start work と start to work の違い\nどちらも文法的に正しい表現です。\nI start work at nine.\n私は9時に仕事を始めます。\nI start to work at nine.\n私は9時に働き始めます。\nポイント： 普段の始業時間を伝えるなら、start work が簡潔で自然です。\n質問③ then はどういうときに使う？\nthen = それから、そのあと\n行動の順番を説明するときに使います。\nI eat breakfast. Then I go to work.\n朝食を食べます。それから仕事に行きます。\nポイント： then は文と文の流れをつなぐ副詞です。出来事を順番に説明するときによく使います。\n質問④ then と when の違い\nthen = それから\nwhen = 〜するとき\nthen は動作の順番を表します。\nI eat breakfast, and then I go to work.\n朝食を食べて、それから仕事に行きます。\nwhen は、ある動作が起こるタイミングを表します。\nWhen I finish breakfast, I go to work.\n朝食を食べ終えたら、仕事に行きます。\nポイント： then は「次に何をするか」、when は「いつするか」を説明します。\n質問⑤ when は文のどこに置く？\nwhen は文頭にも文の途中にも置けます。\nWhen I finish breakfast, I go to work.\nI go to work when I finish breakfast.\nどちらも「朝食を食べ終えたら、仕事に行きます」という意味です。\nポイント： when は「〜するとき」という時間を説明する節の前に置きます。\n3. 今日の訂正・改善ポイント\n① 朝食を食べる\n△ I usually eat a breakfast.\n◎ I usually eat breakfast.\n一般的に朝食を食べるという意味では、breakfast に a を付けません。\nただし、a Japanese breakfast のように朝食の種類を説明するときには a を使えます。\n② 仕事を始める\n○ I start to work around nine.\n◎ I start work around nine.\nどちらも正しいですが、始業時間の説明には下の表現が簡潔です。\n4. 今日の振り返り\n今回のレッスンでは、朝の行動を英語で説明する練習ができました。\n特に、get to work、start work、finish work の違いや、then と when の使い方について、自分から質問して理解を深められました。\n次回の復習ポイント： then と when を使って、自分の朝の行動を3文で説明する。",
+      "recordedAt": "2026-10-10T12:15:25.069321+00:00"
+    }
+  ]
 }
