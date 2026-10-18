@@ -17,11 +17,12 @@
   --border:#e2d9cc;--t1:#1a2a3a;--t2:#5a6a7a;--t3:#8a9aaa;
 }
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
-.wrap{max-width:720px;margin:0 auto;padding:28px 18px 60px;}
-.back{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;margin-bottom:18px;}
-.back:hover{text-decoration:underline;}
+.wrap{max-width:720px;margin:0 auto;padding:0 18px 60px;}
+.sticky-head{position:sticky;top:0;z-index:30;background:var(--bg);padding:22px 0 14px;border-bottom:1.5px solid var(--border);margin-bottom:16px;}
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;padding:7px 14px;border-radius:8px;border:1.5px solid var(--teal);background:var(--card);margin-bottom:14px;}
+.back-btn:hover{background:var(--teal-l);}
 h1{font-family:'Lora',serif;font-size:22px;color:var(--teal);margin-bottom:6px;}
-.lead{font-size:13px;color:var(--t2);line-height:1.8;margin-bottom:24px;}
+.lead{font-size:13px;color:var(--t2);line-height:1.8;margin-bottom:0;}
 #status{font-size:12.5px;color:var(--t2);margin-bottom:16px;}
 #empty{font-size:13px;color:var(--t2);background:var(--card);border:1.5px dashed var(--border);border-radius:10px;padding:18px;text-align:center;display:none;}
 .lesson-list{display:flex;flex-direction:column;gap:14px;}
@@ -44,9 +45,11 @@ h1{font-family:'Lora',serif;font-size:22px;color:var(--teal);margin-bottom:6px;}
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="chatgpt.html">← ChatGPTで英会話レッスンへ戻る</a>
-  <h1>📖 レッスン記録</h1>
-  <p class="lead">ChatGPTでのレッスン終了後に出力したレポートを、Claude Codeが読み取って記録した一覧です(このページ自体は閲覧専用で、保存・編集はできません)。</p>
+  <div class="sticky-head">
+    <a class="back-btn" href="chatgpt.html">← ChatGPTで英会話レッスンへ戻る</a>
+    <h1>📖 レッスン記録</h1>
+    <p class="lead">ChatGPTでのレッスン終了後に出力したレポートを、Claude Codeが読み取って記録した一覧です(このページ自体は閲覧専用で、保存・編集はできません)。</p>
+  </div>
   <div id="status">読み込み中…</div>
   <div id="empty">まだ記録がありません。レッスン後に「レポートを出して」と伝え、出力内容をClaude Codeへ貼り付けて記録を依頼してください。</div>
   <div class="lesson-list" id="lesson-list"></div>

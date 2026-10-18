@@ -17,11 +17,13 @@
   --border:#e2d9cc;--t1:#1a2a3a;--t2:#5a6a7a;--t3:#8a9aaa;
 }
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;}
-.wrap{max-width:720px;margin:0 auto;padding:28px 18px 60px;}
-.back{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;margin-bottom:18px;}
-.back:hover{text-decoration:underline;}
+.wrap{max-width:720px;margin:0 auto;padding:0 18px 60px;}
+.sticky-head{position:sticky;top:0;z-index:30;background:var(--bg);padding:22px 0 14px;border-bottom:1.5px solid var(--border);margin-bottom:16px;}
+.back-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;padding:7px 14px;border-radius:8px;border:1.5px solid var(--teal);background:var(--card);}
+.back-btn:hover{background:var(--teal-l);}
 h1{font-family:'Lora',serif;font-size:22px;color:var(--teal);margin-bottom:6px;}
-.lead{font-size:13.5px;color:var(--t2);line-height:1.8;margin-bottom:26px;}
+.lead{font-size:13.5px;color:var(--t2);line-height:1.8;margin-bottom:0;}
 .note{background:var(--orange-l);border:1.5px solid var(--orange);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.8;color:var(--t1);margin-bottom:26px;}
 .note b{color:var(--orange);}
 section{margin-bottom:30px;}
@@ -57,13 +59,17 @@ table.books tr:last-child td{border-bottom:none;}
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="index.html">← トップへ戻る</a>
-  <a class="back" href="lessons.html" style="margin-left:14px;">📖 レッスン記録を見る →</a>
-  <h1>💬 ChatGPTで英会話レッスン</h1>
-  <p class="lead">
-    実際のレッスンは、このサイトではなく<b>ChatGPTの画面上</b>で行います。このページでは、
-    ChatGPTを「オンライン英会話講師」として動かすためのプロンプトと、設定・使い方だけを説明します。
-  </p>
+  <div class="sticky-head">
+    <div class="back-row">
+      <a class="back-btn" href="index.html">← トップへ戻る</a>
+      <a class="back-btn" href="lessons.html">📖 レッスン記録を見る →</a>
+    </div>
+    <h1>💬 ChatGPTで英会話レッスン</h1>
+    <p class="lead">
+      実際のレッスンは、このサイトではなく<b>ChatGPTの画面上</b>で行います。このページでは、
+      ChatGPTを「オンライン英会話講師」として動かすためのプロンプトと、設定・使い方だけを説明します。
+    </p>
+  </div>
 
   <div class="note">
     <b>⚠️ ご注意:</b> 下記プロンプト内で参照している「レッスンブック」ファイル(A〜F、レッスン本文の実体)は、

@@ -23,6 +23,8 @@ a{color:var(--teal);}
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
   position:sticky;top:0;z-index:100;backdrop-filter:blur(8px);}
 .hdr-left{display:flex;align-items:center;gap:10px;}
+.hdr-home-btn{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--teal);text-decoration:none;padding:6px 12px;border-radius:8px;border:1.5px solid var(--teal);background:var(--card);flex:0 0 auto;}
+.hdr-home-btn:hover{background:var(--teal-l);}
 .logo-text{font-size:16px;font-weight:800;color:var(--teal);}
 .logo-sub{font-size:10px;color:var(--teal-m);}
 .hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -312,6 +314,7 @@ a{color:var(--teal);}
 <body>
 <header class="hdr">
   <div class="hdr-left">
+    <a class="hdr-home-btn" href="index.html">← トップへ戻る</a>
     <span style="font-size:22px;">🎤</span>
     <div><div class="logo-text">English Speaking Practice</div><div class="logo-sub">powered by Groq ⚡ 超高速・安定・無料</div></div>
   </div>
