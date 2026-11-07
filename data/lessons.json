@@ -299,6 +299,58 @@
       "homework": "My favorite room is the living room because I can relax there. を途中で止まらずに言えるようになる(次回の復習目標)。",
       "rawReport": "英会話レッスンレポート\n基本情報\n\n* 日付： 2026年10月29日（木）\n* 時間： 午前0時36分ごろ開始（終了時刻は未確認）\n* コース： スキマ英会話【初級】\n* レッスン番号： E-7\n* タイトル： Your Home（住まい）\n* 学習テーマ： 自分の住まいやお気に入りの部屋を英語で説明する\n\n1. 今日のレッスンで練習した英文\n① 住まいについて\nI live in an apartment.\n私はアパートに住んでいます。\nIt's near the station.\n駅の近くにあります。\nI share it with my family.\n家族と一緒に住んでいます。\nこれらの3文を、講師のあとに繰り返して練習しました。\n特に「I share it with my family.」は何度も発音を練習し、一度は正しい英文として音声認識されています。\n② お気に入りの部屋\nWhat is your favorite room in your home?\n家の中で一番好きな部屋はどこですか？\nMy favorite room is a living room.\n私の好きな部屋はリビングです。（実際の発言）\nMy favorite room is the living room.\n私の好きな部屋はリビングです。（講師が提示した表現）\n③ 好きな理由\nWhy do you like it?\nなぜその部屋が好きなのですか？\nBecause I can relax there.\nそこではリラックスできるからです。\nこの英文は、講師の訂正後に正しく復唱できました。\n2. 今日質問した内容と解説\n今回の会話では、文法や単語についての明示的な質問はありませんでした。\nただし、練習中に難しかった表現について補足します。\nshare it with の意味\nI share it with my family.\n私はそれを家族と共有しています。\n\n* share：共有する\n* it：それを\n* with my family：家族と\n\nこの文では、住まいを家族と共有しているという意味になります。\nBecause I can relax there.\n「because + 主語 + 動詞」で理由を説明できます。\nI like my living room because I can relax there.\nそこでリラックスできるので、リビングが好きです。\n3. 今日の訂正・改善ポイント\n① live の発音\n実際の発言：\nI love in an apartment.\n正しい英文：\nI live in an apartment.\n解説：\nlive は「住む」、love は「愛する」です。\n今回は訂正後に正しく言い直せました。\n② share it の発音\n実際の発言（音声認識）：\nI sure is with my family.\n正しい英文：\nI share it with my family.\n解説：\n「share it」は音がつながって聞こえるため、発音が難しい部分です。\n一度正しく言えた場面があったので、繰り返し練習すると安定してきます。\n③ お気に入りの部屋の説明\n実際の発言：\nMy favorite relax room is living room.\n自然な英文：\nMy favorite room is the living room because I can relax there.\n日本語訳：\n私の好きな部屋はリビングです。そこでリラックスできるからです。\n解説：\n「どの部屋が好きか」と「なぜ好きか」を1つの文にまとめると、自然な説明になります。\n4. 今日の振り返り\n良かった点\n自分の好きな場所と、その理由を英語で伝えられたことです。\n最初は単語を組み合わせながら話していましたが、最後には次の表現を正しく言えました。\nBecause I can relax there.\nそこでリラックスできるからです。\n改善したい点\n今回は発音、特に次の2つを練習するとよいでしょう。\n\n* live と love の発音の違い\n* share it の音のつながり\n\n次回の復習ポイント\nMy favorite room is the living room because I can relax there.\n私の好きな部屋はリビングです。そこでリラックスできるからです。\nこの英文を途中で止まらずに言えるようになることが、次回の復習目標です。\n総評： 今回は自分の言葉で答えようとする姿勢が良かったです。特に、うまく発音できなかった表現を繰り返し練習し、正しく言えた場面があったことは大きな成果です。",
       "recordedAt": "2026-10-28T16:45:34.000000+00:00"
+    },
+    {
+      "id": "lesson-2026-11-07-01",
+      "date": "2026-11-07",
+      "courseMaterial": "初級英会話・フリートーク Talking About My Work and Apps（仕事とアプリ開発について話す）",
+      "expressions": [
+        {
+          "en": "I worked on my tasks.",
+          "ja": "私は自分の作業に取り組みました。"
+        },
+        {
+          "en": "I worked on an IT system yesterday because I'm an IT engineer.",
+          "ja": "私はITエンジニアなので、昨日ITシステムの作業をしました。"
+        },
+        {
+          "en": "I'm an IT engineer.",
+          "ja": "私はITエンジニアです。"
+        },
+        {
+          "en": "I'm making a task app.",
+          "ja": "私はタスク管理アプリを作っています。"
+        },
+        {
+          "en": "The research app uses AI.",
+          "ja": "その調査アプリはAIを使用します。"
+        }
+      ],
+      "corrections": [
+        {
+          "said": "I walked to my task.",
+          "fixed": "I worked on my tasks."
+        },
+        {
+          "said": "I made to system, IT system, because my job is IT engineer.",
+          "fixed": "I worked on an IT system yesterday because I'm an IT engineer."
+        },
+        {
+          "said": "I want to tell you making application.",
+          "fixed": "I want to tell you about the app I'm making."
+        },
+        {
+          "said": "This research application use AI.",
+          "fixed": "This research application uses AI."
+        },
+        {
+          "said": "You are mistake.",
+          "fixed": "I think you misunderstood me."
+        }
+      ],
+      "homework": "次の3文を英文を見ずに言う練習: I'm an IT engineer. / I'm making a task app. / The research app uses AI.(動詞の選び方(walk/work、use/uses)と英文の組み立てもあわせて復習)",
+      "rawReport": "英会話レッスンレポート\n基本情報\n\n* レポート作成日： 2026年11月7日（土）\n* レッスン実施日： 記録からは確定できません\n* 時間： 開始・終了時刻は未確認\n* コース名： 初級英会話・フリートーク\n* レッスン番号： 指定なし\n* レッスンタイトル： Talking About My Work and Apps（仕事とアプリ開発について話す）\n\n1. 今日のレッスンで練習した英文\n① 部屋への移動\nI will go to room.\n部屋に行くつもりです。（冠詞などが不足している表現）\nI will go to the bathroom.\n私はトイレに行きます。\nI will go to the kitchen.\n私はキッチンに行きます。\n講師は I will go to the living room.（リビングに行きます）も提示しましたが、実際には bathroom と kitchen を練習しました。\n② 昨日した仕事について\nWhat did you do yesterday?\n昨日は何をしましたか？\nI walked to my task.\n仕事の作業をしたことを伝えようとした文です。\nI worked on my tasks.\n私は自分の作業に取り組みました。\nWhen did you do that?\nそれはいつしましたか？\nI made to system, IT system, because my job is IT engineer.\nITエンジニアなので、ITシステムを作ったことを伝えようとした文です。\nI worked on an IT system yesterday because I'm an IT engineer.\n私はITエンジニアなので、昨日ITシステムの作業をしました。\nこの最後の英文は、繰り返し練習して、最後には全文を言えるようになりました。\n③ 職業について\nIT engineer.\nITエンジニア。\nI'm an IT engineer.\n私はITエンジニアです。\n職業を表すときの `I'm an ...` を練習しました。\n④ 自分で開発しているアプリについて\nWhat kind of app are you making?\nどんなアプリを作っていますか？\nI'm making a task application.\n私はタスク管理アプリを作っています。\nI'm making a task app.\n私はタスク管理アプリを作っています。\nWhat does your research app do?\nあなたの調査アプリは何をするものですか？\nThis application is using AI system.\nこのアプリがAIを利用していると伝えようとした文です。\nThis research application use AI.\nこの調査アプリはAIを使う、という意味で話した文です。\nThe research app uses AI.\nその調査アプリはAIを使用します。\n最後の英文も、何度も練習して正しく言えるようになりました。\n2. 今日質問した内容と解説\n① Say it once more smoothly, please. の意味\n講師が言った次の英文について質問しました。\nGreat job! Clear and slow.\nよくできました！ はっきり、ゆっくり言えています。\nSay it once more smoothly, please.\nもう一度、今度はスムーズに言ってみてください。\nポイントは次のとおりです。\n\n* once more： もう一度\n* smoothly： スムーズに、なめらかに\n* say it： それを言う\n\n今回の場合、「途中で何度も止まらずに、英文をつなげて言ってください」という意味でした。\n② app と application の違い\nレッスン中、次の2つを使いました。\nI'm making a task application.\n私はタスク管理アプリを作っています。\nI'm making a task app.\n私はタスク管理アプリを作っています。\nどちらも文法的に正しい英文です。\napp は application の短い形で、日常会話ではよく使われます。今回の application は間違いではなく、短く言う練習でした。\n③ use と uses の違い\nThe research app uses AI.\nその調査アプリはAIを使用します。\n主語が三人称単数で、現在形の場合、一般動詞には通常 `s` が付きます。\n\n* I use AI.（私はAIを使います）\n* The app uses AI.（そのアプリはAIを使います）\n\nまた、used は過去形なので、現在の機能を説明する今回は uses が適切です。\n3. 今日の訂正・改善ポイント\n① 作業をしたことを伝える\n実際の発言\nI walked to my task.\n自然な英文\nI worked on my tasks.\n私は自分の作業に取り組みました。\n解説： walk は「歩く」、work on は「〜に取り組む」という意味です。\n② ITエンジニアだと説明する\n実際の発言\nI made to system, IT system, because my job is IT engineer.\n自然な英文\nI worked on an IT system yesterday because I'm an IT engineer.\n私はITエンジニアなので、昨日ITシステムの作業をしました。\n解説： work on an IT system で「ITシステムの作業に取り組む」、because で理由を説明できます。\n③ 作っているアプリについて話す\n実際の発言\nI want to tell you making application.\n自然な英文\nI want to tell you about the app I'm making.\n私が作っているアプリについて話したいです。\n解説： tell you about ... で「あなたに〜について話す」という表現になります。\n④ AIを使うことを説明する\n実際の発言\nThis research application use AI.\n自然な英文\nThis research application uses AI.\nこの調査アプリはAIを使用します。\n解説： This research application は三人称単数なので、現在形では uses になります。\n⑤ 相手の誤解を伝える\n実際の発言\nYou are mistake.\n自然な英文\nI think you misunderstood me.\n私の言いたいことが少し違って伝わったと思います。\n解説： misunderstand は「誤解する」という動詞です。相手に意図が伝わっていないことを、自然に伝えられます。\n4. 今日の振り返り\n良かった点\n仕事について話すだけでなく、自分が開発しているタスク管理アプリや調査アプリについて、自分から話を広げられました。\n特に、講師が話題を映画に変えようとした際にも、自分の話したいことを英語で伝えようとした点が良かったです。\n改善したい点\n主に次の2つを復習しましょう。\n\n* 動詞の選び方： walk と work、use と uses\n* 英文の組み立て： 主語＋動詞＋目的語を意識して、短い文章から作る\n\n次回の復習ポイント\n次の3文を、英文を見ずに言う練習がおすすめです。\nI'm an IT engineer.\n私はITエンジニアです。\nI'm making a task app.\n私はタスク管理アプリを作っています。\nThe research app uses AI.\nその調査アプリはAIを使用します。\n総評\n今回のレッスンでは、自分の仕事や開発しているアプリについて英語で説明する練習ができました。\n最初は英文を組み立てることに苦戦していましたが、繰り返し練習することで、最後には The research app uses AI. を正しく言えるようになりました。\n次回は、正しい英文を繰り返す練習に加えて、自分の言葉でアプリの機能を1〜2文説明することを目標にしましょう。",
+      "recordedAt": "2026-11-07T02:11:30.288734+00:00"
     }
   ]
 }
